@@ -3,8 +3,8 @@
 const int num_pins = 3;
 const int pins[num_pins] = { A0, A1, A2 }; // in order of accel, brake, clutch
 int last_sent_values[num_pins];
-const int interval = 50; // main loop interval
-const int min_delta = 10; // don't send new data unless it's this different from previous values
+const int interval = 10; // main loop interval
+const int min_delta = 1; // don't send new data unless it's this different from previous values
 unsigned long last_sent_time = 0;
 const unsigned long max_send_interval = 500;
 
@@ -27,7 +27,7 @@ void loop()
 
     unsigned long time = millis();
 
-    if (biggest_delta > min_delta || abs(time - last_sent_time) > max_send_interval)
+    if (biggest_delta >= min_delta || abs(time - last_sent_time) > max_send_interval)
     {
         String result = "";
         for (int i = 0; i < num_pins; i ++)

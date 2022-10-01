@@ -6,7 +6,7 @@ debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
 GAS_EVENT = uinput.ABS_THROTTLE
-GAS_LIMITS = (10, 1000) # Used to calibrate movement range. Reverse order to invert direction
+GAS_LIMITS = (423, 466) # Used to calibrate movement range. Reverse order to invert direction
 BRAKE_EVENT = uinput.ABS_X
 BRAKE_LIMITS = (10, 1000)
 CLUTCH_EVENT = uinput.ABS_Y
@@ -65,7 +65,6 @@ with Serial('/dev/ttyACM0', 115200) as serial_connection:
                 print(f'Debug data: {line}')
 
             (gas_value, brake_value, clutch_value) = map(int, line.split(','))
-
             device.emit(GAS_EVENT, map_to_output(gas_value, GAS_LIMITS))
             device.emit(BRAKE_EVENT, map_to_output(brake_value, BRAKE_LIMITS))
             device.emit(CLUTCH_EVENT, map_to_output(clutch_value, CLUTCH_LIMITS))
