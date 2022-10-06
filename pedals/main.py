@@ -31,6 +31,7 @@ def map_to_output(value, limits):
     return int(mapped_value)
 
 def main(serial_path='/dev/ttyACM0'):
+    print('Starting pedals...')
     device = uinput.Device(events, name="uinupt-pedals")
     time.sleep(1)
 

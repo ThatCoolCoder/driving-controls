@@ -17,6 +17,7 @@ def map_value(value, in_min, in_max, out_min, out_max):
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
 def main(serial_path='/dev/ttyACM0'):
+    print('Starting wheel...')
     prev_rotations = 0
 
     device = uinput.Device(events, name="uinput-wheel")
@@ -68,7 +69,7 @@ def main(serial_path='/dev/ttyACM0'):
                     
                 final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 255))
 
-                device.emit(uinput.ABS_X, final_value)
+                device.emit(uinput.ABS_Z, final_value)
             else:
                 print(f'Unrecognised data type. Full line: {line}')
 
