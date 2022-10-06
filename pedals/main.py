@@ -6,11 +6,11 @@ debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
 GAS_EVENT = uinput.ABS_THROTTLE
-GAS_LIMITS = (423, 466) # Used to calibrate movement range. Reverse order to invert direction
+GAS_LIMITS = (500, 596) # Used to calibrate movement range. Reverse order to invert direction
 BRAKE_EVENT = uinput.ABS_X
-BRAKE_LIMITS = (10, 1000)
+BRAKE_LIMITS = (450, 413)
 CLUTCH_EVENT = uinput.ABS_Y
-CLUTCH_LIMITS = (10, 1000)
+CLUTCH_LIMITS = (547, 590)
 
 events = (
     GAS_EVENT + (0, 255, 0, 0), BRAKE_EVENT + (0, 255, 0, 0), CLUTCH_EVENT + (0, 255, 0, 0),
