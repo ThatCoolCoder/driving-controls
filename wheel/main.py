@@ -3,42 +3,25 @@ import uinput
 import time
 
 debug = False
+clicks_per_rotation = 20
+total_rotations = 3 # from full-left to full-right
+inverted = True
 
-# There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
-GAS_EVENT = uinput.ABS_THROTTLE
-GAS_LIMITS = (500, 596) # Used to calibrate movement range. Reverse order to invert direction
-BRAKE_EVENT = uinput.ABS_X
-BRAKE_LIMITS = (450, 413)
-CLUTCH_EVENT = uinput.ABS_Y
-CLUTCH_LIMITS = (547, 590)
-
-events = (
-    GAS_EVENT + (0, 255, 0, 0), BRAKE_EVENT + (0, 255, 0, 0), CLUTCH_EVENT + (0, 255, 0, 0),
-
-    # random stuff to make sure steam recognises it as a controller
-    uinput.BTN_JOYSTICK,
+events = (uinput.BTN_JOYSTICK,
     uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 255, 0, 0),
     uinput.ABS_RX,
     uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
     uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
 
-
 def map_value(value, in_min, in_max, out_min, out_max):
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
-def map_to_output(value, limits):
-    mapped_value = map_value(value, limits[0], limits[1], 0, 255)
-    return int(mapped_value)
-
 def main(serial_path='/dev/ttyACM0'):
-    device = uinput.Device(events, name="uinupt-pedals")
+    prev_rotations = 0
+
+    device = uinput.Device(events, name="uinput-wheel")
     time.sleep(1)
 
-    device.emit(GAS_EVENT, 0)
-    device.emit(BRAKE_EVENT, 255)
-    device.emit(CLUTCH_EVENT, 255)
-
-    # random stuff to make sure steam recognises it as a controller
     device.emit(uinput.ABS_X, 128, syn=False)
     device.emit(uinput.ABS_Y, 128, syn=False)
     device.emit(uinput.ABS_Z, 128, syn=False)
@@ -57,26 +40,37 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_8, 0, True)
     device.emit(uinput.BTN_9, 0, True)
 
-    with Serial(serial_path, 115200) as serial_connection:
+    with Serial(serial_path, 2000000) as serial_connection:
         while True:
             try:
                 line = serial_connection.readline().decode('utf-8').strip()
-
-                if debug:
-                    print(f'Debug data: {line}')
-
-                (gas_value, brake_value, clutch_value) = map(int, line.split(','))
-                device.emit(GAS_EVENT, map_to_output(gas_value, GAS_LIMITS))
-                device.emit(BRAKE_EVENT, map_to_output(brake_value, BRAKE_LIMITS))
-                device.emit(CLUTCH_EVENT, map_to_output(clutch_value, CLUTCH_LIMITS))
-
-            except Exception as e:
+            except Exception:
                 print('Error parsing line')
                 time.sleep(1) # Avoid spamming terminal
+                continue
+            
+            split_data = line.split(':', 1)
+            if len(split_data) < 2:
+                print(f'Line isn\'t in expected format (no colon): {line}')
+                continue
+
+            (prefix, data) = split_data
+            if prefix == 'text':
+                print(f'Text: {data}')
+            elif prefix == 'data':
                 if debug:
-                    print(e)
-                else:
-                    continue
+                    print(f'Debug data: {data}')
+
+                rotations = int(data) / clicks_per_rotation
+                rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
+                if inverted:
+                    rotations = -rotations
+                    
+                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 255))
+
+                device.emit(uinput.ABS_X, final_value)
+            else:
+                print(f'Unrecognised data type. Full line: {line}')
 
 if __name__ == '__main__':
-    main()
+    main('/dev/ttyACM0')
