@@ -6,11 +6,11 @@ debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
 GAS_EVENT = uinput.ABS_THROTTLE
-GAS_LIMITS = (500, 596) # Used to calibrate movement range. Reverse order to invert direction
+GAS_LIMITS = (540, 610) # Used to calibrate movement range. Reverse order to invert direction
 BRAKE_EVENT = uinput.ABS_X
-BRAKE_LIMITS = (450, 413)
+BRAKE_LIMITS = (430, 400)
 CLUTCH_EVENT = uinput.ABS_Y
-CLUTCH_LIMITS = (547, 590)
+CLUTCH_LIMITS = (420, 490)
 
 events = (
     GAS_EVENT + (0, 255, 0, 0), BRAKE_EVENT + (0, 255, 0, 0), CLUTCH_EVENT + (0, 255, 0, 0),
@@ -59,6 +59,7 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_9, 0, True)
 
     with Serial(serial_path, 115200) as serial_connection:
+        last_gas = 0
         while True:
             try:
                 line = serial_connection.readline().decode('utf-8').strip()
@@ -67,9 +68,13 @@ def main(serial_path='/dev/ttyACM0'):
                     print(f'Debug data: {line}')
 
                 (gas_value, brake_value, clutch_value) = map(int, line.split(','))
+                if gas_value < 5:
+                    gas_value = last_gas
                 device.emit(GAS_EVENT, map_to_output(gas_value, GAS_LIMITS))
                 device.emit(BRAKE_EVENT, map_to_output(brake_value, BRAKE_LIMITS))
-                device.emit(CLUTCH_EVENT, map_to_output(clutch_value, CLUTCH_LIMITS))
+                # device.emit(CLUTCH_EVENT, map_to_output(clutch_value, CLUTCH_LIMITS))
+                if gas_value >= 5:
+                    last_gas = gas_value
 
             except Exception as e:
                 print('Error parsing line')

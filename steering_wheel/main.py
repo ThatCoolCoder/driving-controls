@@ -8,7 +8,7 @@ total_rotations = 3 # from full-left to full-right
 inverted = True
 
 events = (uinput.BTN_JOYSTICK,
-    uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 255, 0, 0),
+    uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
     uinput.ABS_RX,
     uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
     uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
@@ -61,13 +61,13 @@ def main(serial_path='/dev/ttyACM0'):
             elif prefix == 'data':
                 if debug:
                     print(f'Debug data: {data}')
-
-                rotations = int(data) / clicks_per_rotation
+                
+                rotations = (int(data) + 1) / clicks_per_rotation
                 rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
                 if inverted:
                     rotations = -rotations
                     
-                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 255))
+                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 32768))
 
                 device.emit(uinput.ABS_Z, final_value)
             else:

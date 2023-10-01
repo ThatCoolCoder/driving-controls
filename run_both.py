@@ -1,7 +1,7 @@
 import threading
 
 import pedals.main as pedals
-import wheel.main as wheel
+import steering_wheel.main as wheel
 
 
 if __name__ == '__main__':
