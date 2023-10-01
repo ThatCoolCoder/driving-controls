@@ -1,11 +1,16 @@
 #include <Arduino.h>
 #include <math.h>
+#include <Servo.h>
 
 // Rotary Encoder Inputs
 #define CLK 2
 #define DT 3
 #define SW 4
 #define STRAIGHT_SWITCH 5 // a switch that goes LOW only when the wheel is straight (not centered, just vertical). Compensates for encoder drift
+#define ESC_SIGNAL 6
+#define MAX_ESC_POWER 180
+
+Servo esc;
 
 int counter = 0;
 int last_state_clk;
@@ -31,9 +36,38 @@ void setup()
 
 	// Setup Serial Monitor
 	Serial.begin(2000000);
+	Serial.setTimeout(1);
 
 	// Read the initial state of CLK
 	last_state_clk = digitalRead(CLK);
+
+	// Attach & calibrate esc
+	esc.attach(ESC_SIGNAL, 1000, 2000);
+	esc.write(0);
+
+	// calibrate();
+
+
+	// delay(5000);
+	// esc.write(45);
+	// delay(5000);
+	// esc.write(20);
+
+}
+
+void calibrate()
+{
+	Serial.println("-- Calibration");
+	Serial.println("Press enter to go 100%");
+	while (Serial.available() == 0) {}
+	Serial.readString();
+	esc.write(180);
+
+	Serial.println("Press enter to go 0%");
+	while (Serial.available() == 0) {}
+	Serial.readString();
+	esc.write(0);
+	Serial.println("Done");
 }
 
 void loop()
@@ -56,8 +90,17 @@ void loop()
 		last_sent_time = time;
     }
 
+	int motor_power = Serial.parseInt();
+	if (motor_power != 0)
+	{
+		int true_motor_power = map(motor_power, 0, 32767, 0, MAX_ESC_POWER);
+		esc.write(true_motor_power);
+		Serial.print("text:");
+		Serial.println(true_motor_power);
+	}
+
 	// Put in a slight delay to help debounce the reading
-	delay(1);
+	// delay(1);
 }
 
 void send_to_python(String s)
