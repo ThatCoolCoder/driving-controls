@@ -6,11 +6,8 @@ debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
 GAS_EVENT = uinput.ABS_THROTTLE
-GAS_LIMITS = (540, 610) # Used to calibrate movement range. Reverse order to invert direction
 BRAKE_EVENT = uinput.ABS_X
-BRAKE_LIMITS = (430, 400)
 CLUTCH_EVENT = uinput.ABS_Y
-CLUTCH_LIMITS = (420, 490)
 
 events = (
     GAS_EVENT + (0, 255, 0, 0), BRAKE_EVENT + (0, 255, 0, 0), CLUTCH_EVENT + (0, 255, 0, 0),
@@ -21,14 +18,6 @@ events = (
     uinput.ABS_RX,
     uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
     uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
-
-
-def map_value(value, in_min, in_max, out_min, out_max):
-    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
-
-def map_to_output(value, limits):
-    mapped_value = map_value(value, limits[0], limits[1], 0, 255)
-    return int(mapped_value)
 
 def main(serial_path='/dev/ttyACM0'):
     print('Starting pedals...')
@@ -58,7 +47,7 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_8, 0, True)
     device.emit(uinput.BTN_9, 0, True)
 
-    with Serial(serial_path, 115200) as serial_connection:
+    with Serial(serial_path, 2000000) as serial_connection:
         last_gas = 0
         while True:
             try:
@@ -67,14 +56,19 @@ def main(serial_path='/dev/ttyACM0'):
                 if debug:
                     print(f'Debug data: {line}')
 
-                (gas_value, brake_value, clutch_value) = map(int, line.split(','))
-                if gas_value < 5:
-                    gas_value = last_gas
-                device.emit(GAS_EVENT, map_to_output(gas_value, GAS_LIMITS))
-                device.emit(BRAKE_EVENT, map_to_output(brake_value, BRAKE_LIMITS))
-                # device.emit(CLUTCH_EVENT, map_to_output(clutch_value, CLUTCH_LIMITS))
-                if gas_value >= 5:
-                    last_gas = gas_value
+                split_data = line.split(':', 1)
+                if len(split_data) < 2:
+                    print(f'Line isn\'t in expected format (no colon): {line}')
+                    continue
+
+                (prefix, data) = split_data
+
+                if prefix == 'text':
+                    print(data)
+                elif prefix == 'data':
+                    handle_data(data, device)
+                else:
+                    print(f'Unexpected data label: {prefix}')
 
             except Exception as e:
                 print('Error parsing line')
@@ -83,6 +77,20 @@ def main(serial_path='/dev/ttyACM0'):
                     print(e)
                 else:
                     continue
+
+def handle_data(data, device):
+    (gas_value, brake_value, clutch_value) = map(int, line.split(','))
+
+    device.emit(GAS_EVENT, map_to_output(gas_value))
+    device.emit(BRAKE_EVENT, map_to_output(brake_value))
+    device.emit(CLUTCH_EVENT, map_to_output(clutch_value))
+
+def map_value(value, in_min, in_max, out_min, out_max):
+    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
+
+def map_to_output(value):
+    mapped_value = map_value(value, 0, 0xFFFF, -0x7FFF, 0x7FFF)
+    return int(mapped_value)
 
 if __name__ == '__main__':
     main()

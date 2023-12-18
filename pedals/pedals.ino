@@ -1,45 +1,63 @@
 #include <Arduino.h>
+#include "HX711.h"
 
-const int num_pins = 3;
-const int pins[num_pins] = { A0, A1, A2 }; // in order of accel, brake, clutch
-int last_sent_values[num_pins];
-const int interval = 10; // main loop interval
-const int min_delta = 1; // don't send new data unless it's this different from previous values
-unsigned long last_sent_time = 0;
-const unsigned long max_send_interval = 500;
+// Yes I know loops and arrays exist but there's only 3 of them, it's actually shorter & faster to just copy + paste
+HX711 accel;
+HX711 brake;
+HX711 clutch;
+
+const uint16_t FULL_PRESS_VALUE = 0xFFFF;
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(2000000);
+
+    accel.begin(2, 3);
+    brake.begin(4, 5);
+    clutch.begin(6, 7);
+    
+    calibrate();
+}
+
+void calibrate()
+{
+    accel.tare();
+    brake.tare();
+    clutch.tare();
+
+    show_message("Please press brake and clutch fully for calibration");
+    delay(2000);
+    brake.calibrate_scale(FULL_PRESS_VALUE);
+    clutch.calibrate_scale(FULL_PRESS_VALUE);
+
+    show_message("Please press accelerator fully for calibration");
+    delay(2000);
+    accel.calibrate_scale(FULL_PRESS_VALUE);
+
+    show_message("Calibration complete");
 }
 
 void loop()
 {
-    int new_values[num_pins];
-    int biggest_delta = 0;
-    for (int i = 0; i < num_pins; i ++)
-    {
-        int new_value = analogRead(pins[i]);
-        new_values[i] = new_value;
-        int delta = abs(last_sent_values[i] - new_value);
-        biggest_delta = max(biggest_delta, delta);
-    }
+    float _accelValue = accel.read();
+    send_data(String(_accelValue));
 
-    unsigned long time = millis();
-
-    if (biggest_delta >= min_delta || abs(time - last_sent_time) > max_send_interval)
-    {
-        String result = "";
-        for (int i = 0; i < num_pins; i ++)
-        {
-            result += new_values[i];
-            if (i != num_pins - 1) result += ",";
-            last_sent_values[i] = new_values[i];
-        }
-        last_sent_time = time;
-        Serial.println(result);
-    }
+    // Probable working:
+    int accelValue = (int) accel.read();
+    int brakeValue = (int) brake.read();
+    int clutchValue = (int) clutch.read();
+    // send_data(String(accelValue) + ',' + String(brakeValue) + ',' + String(clutchValue));
 
 
-    delay(interval);
+    // delay(interval);
+}
+
+void show_message(String message)
+{
+    Serial.println("text:" + message);
+}
+
+void send_data(String data)
+{
+    Serial.println("data:" + data);
 }

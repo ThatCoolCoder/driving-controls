@@ -23,8 +23,9 @@ def main(serial_path='/dev/ttyACM0'):
     device = uinput.Device(events, name="uinput-wheel")
     time.sleep(1)
 
-    device.emit(uinput.ABS_X, 128, syn=False)
-    device.emit(uinput.ABS_Y, 128, syn=False)
+    # random events to make steam recognise it as an input device
+    device.emit(uinput.ABS_X, 0, syn=False)
+    device.emit(uinput.ABS_Y, 0, syn=False)
     device.emit(uinput.ABS_Z, 128, syn=False)
     device.emit(uinput.ABS_RX, 0, syn=False)
     device.emit(uinput.ABS_HAT0X, 0, True)
