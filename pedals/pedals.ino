@@ -1,12 +1,17 @@
 #include <Arduino.h>
 #include "HX711.h"
 
+#define BUZZER 8
+
 // Yes I know loops and arrays exist but there's only 3 of them, it's actually shorter & faster to just copy + paste
 HX711 accel;
 HX711 brake;
 HX711 clutch;
 
 const uint16_t FULL_PRESS_VALUE = 0xFFFF;
+float accel_max;
+float brake_max;
+float clutch_max;
 
 void setup()
 {
@@ -15,41 +20,44 @@ void setup()
     accel.begin(2, 3);
     brake.begin(4, 5);
     clutch.begin(6, 7);
+
+    pinMode(BUZZER, OUTPUT);
+    digitalWrite(BUZZER, LOW);
     
     calibrate();
 }
 
 void calibrate()
 {
+    show_message("-- STARTING CALIBRATION --");
+    beep(300);
+
     accel.tare();
     brake.tare();
     clutch.tare();
 
     show_message("Please press brake and clutch fully for calibration");
     delay(2000);
-    brake.calibrate_scale(FULL_PRESS_VALUE);
-    clutch.calibrate_scale(FULL_PRESS_VALUE);
+    brake_max = brake.get_value(10U);
+    // clutch_max = clutch.get_value(10U); todo: buy hx711 for clutch
+    repeated_beep(2);
 
     show_message("Please press accelerator fully for calibration");
     delay(2000);
-    accel.calibrate_scale(FULL_PRESS_VALUE);
+    accel_max = accel.get_value(10U);
 
     show_message("Calibration complete");
+    repeated_beep(3);
 }
 
 void loop()
 {
-    float _accelValue = accel.read();
-    send_data(String(_accelValue));
-
     // Probable working:
-    int accelValue = (int) accel.read();
-    int brakeValue = (int) brake.read();
-    int clutchValue = (int) clutch.read();
-    // send_data(String(accelValue) + ',' + String(brakeValue) + ',' + String(clutchValue));
-
-
-    // delay(interval);
+    float accelValue = accel.get_value() / accel_max * FULL_PRESS_VALUE;
+    float brakeValue = brake.get_value() / brake_max * FULL_PRESS_VALUE;
+    // float clutchValue = clutch.get_value() / clutch_max * FULL_PRESS_VALUE;
+    float clutchValue = 0;
+    send_data(String(accelValue) + ',' + String(brakeValue) + ',' + String(clutchValue));
 }
 
 void show_message(String message)
@@ -60,4 +68,22 @@ void show_message(String message)
 void send_data(String data)
 {
     Serial.println("data:" + data);
+}
+
+void beep(int duration)
+{
+
+    digitalWrite(BUZZER, HIGH);
+    delay(duration);
+    digitalWrite(BUZZER, LOW);
+}
+
+void repeated_beep(int times)
+{
+    for (int i = 0; i < times - 1; i ++)
+    {
+        beep(100);
+        delay(100);
+    }
+    beep(100);
 }
