@@ -9,8 +9,14 @@ HX711 brake;
 HX711 clutch;
 
 const uint16_t FULL_PRESS_VALUE = 0xFFFF;
+const float start_deadzone = -0.1; // negative deadzone means that the range is extended - this is possible as we have the raw hardware readings
+const float end_deadzone = 0.02;
+
+float accel_min;
 float accel_max;
+float brake_min;
 float brake_max;
+float clutch_min;
 float clutch_max;
 
 void setup()
@@ -39,12 +45,16 @@ void calibrate()
     show_message("Please press brake and clutch fully for calibration");
     delay(2000);
     brake_max = brake.get_value(10U);
+    brake_min = brake_max * start_deadzone;
+    brake_max -= brake_max * end_deadzone;
     // clutch_max = clutch.get_value(10U); todo: buy hx711 for clutch
     repeated_beep(2);
 
     show_message("Please press accelerator fully for calibration");
     delay(2000);
     accel_max = accel.get_value(10U);
+    accel_min = accel_max * start_deadzone;
+    accel_max -= accel_max * end_deadzone;
 
     show_message("Calibration complete");
     repeated_beep(3);
@@ -52,11 +62,9 @@ void calibrate()
 
 void loop()
 {
-    // Probable working:
-    float accelValue = accel.get_value() / accel_max * FULL_PRESS_VALUE;
-    float brakeValue = brake.get_value() / brake_max * FULL_PRESS_VALUE;
-    // float clutchValue = clutch.get_value() / clutch_max * FULL_PRESS_VALUE;
-    float clutchValue = 0;
+    long accelValue = (long) map_value(accel.get_value(), accel_min, accel_max, 0, (float) FULL_PRESS_VALUE);
+    int brakeValue = 0; // todo: solder brake on
+    int clutchValue = 0; // todo: buy hx711 for clutch
     send_data(String(accelValue) + ',' + String(brakeValue) + ',' + String(clutchValue));
 }
 
@@ -86,4 +94,9 @@ void repeated_beep(int times)
         delay(100);
     }
     beep(100);
+}
+
+float map_value(float value, float in_min, float in_max, float out_min, float out_max)
+{
+    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min));
 }
