@@ -12,7 +12,7 @@ int last_state_clk;
 unsigned long last_was_straight = 0;
 unsigned const long min_check_straight_interval = 1000;
 
-// Try and prevent it writing too much to serial and having the output drift
+// Try and prevent it writing too much to serial and having the output drift because it misses clicks
 unsigned long last_sent_time = 0;
 unsigned const long MIN_SEND_INTERVAL = 50;
 
