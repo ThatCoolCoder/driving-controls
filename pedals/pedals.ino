@@ -63,7 +63,7 @@ void calibrate()
 void loop()
 {
     long accelValue = (long) map_value(accel.get_value(), accel_min, accel_max, 0, (float) FULL_PRESS_VALUE);
-    int brakeValue = 0; // todo: solder brake on
+    long brakeValue = (long) map_value(brake.get_value(), brake_min, brake_max, 0, (float) FULL_PRESS_VALUE);
     int clutchValue = 0; // todo: buy hx711 for clutch
     send_data(String(accelValue) + ',' + String(brakeValue) + ',' + String(clutchValue));
 }
