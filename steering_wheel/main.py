@@ -3,9 +3,9 @@ import uinput
 import time
 
 debug = False
-clicks_per_rotation = 20
+clicks_per_rotation = 80
 total_rotations = 3 # from full-left to full-right
-inverted = True
+inverted = False
 
 events = (uinput.BTN_JOYSTICK,
     uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
@@ -26,7 +26,7 @@ def main(serial_path='/dev/ttyACM0'):
     # random events to make steam recognise it as an input device
     device.emit(uinput.ABS_X, 0, syn=False)
     device.emit(uinput.ABS_Y, 0, syn=False)
-    device.emit(uinput.ABS_Z, 128, syn=False)
+    device.emit(uinput.ABS_Z, 0, syn=False)
     device.emit(uinput.ABS_RX, 0, syn=False)
     device.emit(uinput.ABS_HAT0X, 0, True)
     device.emit(uinput.ABS_HAT0Y, 0, True)
@@ -63,7 +63,7 @@ def main(serial_path='/dev/ttyACM0'):
                 if debug:
                     print(f'Debug data: {data}')
                 
-                rotations = (int(data) + 1) / clicks_per_rotation
+                rotations = int(data) / clicks_per_rotation
                 rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
                 if inverted:
                     rotations = -rotations
