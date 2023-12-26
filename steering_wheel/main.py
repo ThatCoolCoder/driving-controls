@@ -3,6 +3,7 @@ from evdev import UInput, categorize, ecodes, AbsInfo
 import time
 import threading
 
+from . import ui_debug
 
 debug = False
 clicks_per_rotation = 80
@@ -54,6 +55,7 @@ def main(serial_path='/dev/ttyACM0'):
         t = threading.Thread(target=lambda: input_loop(serial_connection, device))
         t.start()
         threading.Thread(target=lambda: receive_ffb_loop(serial_connection, device)).start()
+        threading.Thread(target=ui_debug.main).start()
         t.join()
 
 def input_loop(serial_connection, device):
@@ -107,7 +109,8 @@ def receive_ffb_loop(serial_connection, device):
 
             device.end_upload(upload)
 
-            serial_connection.write(bytes(f'{force}\n', 'utf-8'))
+            # serial_connection.write(bytes(f'{force}\n', 'utf-8'))
+            ui_debug.set_val(force)
 
         elif event.code == ecodes.UI_FF_ERASE:
             erase = device.begin_erase(event.value)
