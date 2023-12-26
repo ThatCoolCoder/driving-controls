@@ -1,41 +1,33 @@
 from serial import Serial
-from evdev import UInput, categorize, ecodes, AbsInfo
 import time
+from evdev import UInput, categorize, ecodes
+import asyncio
+import json
 import threading
 
-
 debug = False
-clicks_per_rotation = 80
+clicks_per_rotation = 20
 total_rotations = 3 # from full-left to full-right
-inverted = False
-
-# events = (uinput.BTN_JOYSTICK,
-#     uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
-#     uinput.ABS_RX,
-#     uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
-#     uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
+inverted = True
 
 cap = {
-    ecodes.EV_FF:  [ecodes.FF_AUTOCENTER, ecodes.FF_CONSTANT, ecodes.FF_CUSTOM, ecodes.FF_DAMPER, ecodes.FF_EFFECT_MAX, ecodes.FF_EFFECT_MIN, ecodes.FF_FRICTION, ecodes.FF_GAIN, ecodes.FF_INERTIA, ecodes.FF_MAX, ecodes.FF_MAX_EFFECTS, ecodes.FF_PERIODIC, ecodes.FF_RAMP, ecodes.FF_RUMBLE, ecodes.FF_SAW_DOWN, ecodes.FF_SAW_UP, ecodes.FF_SINE, ecodes.FF_SPRING, ecodes.FF_SINE, ecodes.FF_SQUARE],
-    ecodes.EV_KEY: [ecodes.KEY_A, ecodes.KEY_B, ecodes.BTN_0, ecodes.BTN_1, ecodes.BTN_2, ecodes.BTN_3, ecodes.BTN_4, ecodes.BTN_5, ecodes.BTN_6, ecodes.BTN_7, ecodes.BTN_8, ecodes.BTN_9],
-    ecodes.EV_ABS: [ecodes.ABS_X, ecodes.ABS_Y, ecodes.ABS_RX, ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y,
-        (ecodes.ABS_Z, AbsInfo(value=0, min=0, max=32768, fuzz=0, flat=0, resolution=0))] # this is the one that we actually care about
+   ecodes.EV_FF:  [ecodes.FF_AUTOCENTER, ecodes.FF_CONSTANT, ecodes.FF_CUSTOM, ecodes.FF_DAMPER, ecodes.FF_EFFECT_MAX, ecodes.FF_EFFECT_MIN, ecodes.FF_FRICTION, ecodes.FF_GAIN, ecodes.FF_INERTIA, ecodes.FF_MAX, ecodes.FF_MAX_EFFECTS, ecodes.FF_PERIODIC, ecodes.FF_RAMP, ecodes.FF_RUMBLE, ecodes.FF_SAW_DOWN, ecodes.FF_SAW_UP, ecodes.FF_SINE, ecodes.FF_SPRING, ecodes.FF_SINE, ecodes.FF_SQUARE],
+   ecodes.EV_KEY: [ecodes.KEY_A, ecodes.KEY_B, ecodes.BTN_0, ecodes.BTN_1, ecodes.BTN_2, ecodes.BTN_3, ecodes.BTN_4, ecodes.BTN_5, ecodes.BTN_6, ecodes.BTN_7, ecodes.BTN_8, ecodes.BTN_9],
+   ecodes.EV_ABS: [ecodes.ABS_X, ecodes.ABS_Y, ecodes.ABS_Z, ecodes.ABS_RX, ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y]
 }
 
 def map_value(value, in_min, in_max, out_min, out_max):
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
-def main(serial_path='/dev/ttyACM0'):
+def main(serial_path):
     print('Starting wheel...')
-    prev_rotations = 0
 
-    device = UInput(cap, name='uinput-wheel-ffb', version=0x3)
+    device = UInput(cap, name='ffbtestwheel', version=0x3)
     time.sleep(1)
 
-    # random events to make steam recognise it as an input device
-    device.write(ecodes.EV_ABS, ecodes.ABS_X, 0)
-    device.write(ecodes.EV_ABS, ecodes.ABS_Y, 0)
-    device.write(ecodes.EV_ABS, ecodes.ABS_Z, 0)
+    device.write(ecodes.EV_ABS, ecodes.ABS_X, 128)
+    device.write(ecodes.EV_ABS, ecodes.ABS_Y, 128)
+    device.write(ecodes.EV_ABS, ecodes.ABS_Z, 128)
     device.write(ecodes.EV_ABS, ecodes.ABS_RX, 0)
     device.write(ecodes.EV_ABS, ecodes.ABS_HAT0X, 0)
     device.write(ecodes.EV_ABS, ecodes.ABS_HAT0Y, 0)
@@ -55,7 +47,7 @@ def main(serial_path='/dev/ttyACM0'):
         t.start()
         threading.Thread(target=lambda: receive_ffb_loop(serial_connection, device)).start()
         t.join()
-
+            
 def input_loop(serial_connection, device):
     while True:
         try:
@@ -74,20 +66,17 @@ def input_loop(serial_connection, device):
         if prefix == 'text':
             print(f'Text: {data}')
         elif prefix == 'data':
-            if debug:
-                print(f'Debug data: {data}')
-            
-            rotations = int(data) / clicks_per_rotation
+            rotations = (int(data) + 1) / clicks_per_rotation
             rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
             if inverted:
                 rotations = -rotations
                 
-            final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 32768))
+            final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, -32768, 32768))
 
-            device.write(ecodes.EV_ABS, ecodes.ABS_Z, final_value)
+            device.write(ecodes.EV_ABS, ecodes.ABS_X, final_value)
             device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
         else:
-            print(f'Unrecognised data type. Full line: {line}')
+            print(f'Unrecognised data type. Full line: {line}', flush=True)
 
 def receive_ffb_loop(serial_connection, device):
     for event in device.read_loop():
