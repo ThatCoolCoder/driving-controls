@@ -1,0 +1,11 @@
+Components:
+- 3x HX711
+- 3x 4-wire load cell
+- piezo buzzer
+
+Wiring:
+- for each HX711, connect load cell wires to respective positions on HX711
+- connect gnd and vcc of HX711 to arduino
+- connect accelerator HX711 dat and clk to pins 2 and 3
+- connect brake HX711 dat and clk to pins 4 and 5
+- connect brake HX711 dat and clk to pins 6 and 7
