@@ -3,7 +3,7 @@ import uinput
 import time
 
 debug = False
-clicks_per_rotation = 80
+clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
 
