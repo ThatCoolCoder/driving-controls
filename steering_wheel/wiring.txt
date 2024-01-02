@@ -5,6 +5,6 @@ Components:
 
 Connections:
 - rotary encoder power/gnd to arduino
-- rotary encoder clk to pin 2
-- rotary encoder dt to pin 3
+- 1st rotary encoder signal wire (possibly called clk) to pin 2
+- 2nd rotary encoder signal wire (possibly called dt) to pin 3
 - switch to ground and pin 5
