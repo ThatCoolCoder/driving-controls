@@ -10,7 +10,7 @@ BRAKE_EVENT = uinput.ABS_X
 CLUTCH_EVENT = uinput.ABS_Y
 
 events = (
-    GAS_EVENT + (0, 0x7FFF, 0, 0), BRAKE_EVENT + (0, 0x7FFF, 0, 0), CLUTCH_EVENT + (0, 0x7FFF, 0, 0),
+    GAS_EVENT + (0, 0xFFFF, 0, 0), BRAKE_EVENT + (0, 0xFFFF, 0, 0), CLUTCH_EVENT + (0, 0xFFFF, 0, 0),
 
     # random stuff to make sure steam recognises it as a controller
     uinput.BTN_JOYSTICK,
@@ -47,7 +47,6 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_9, 0, True)
 
     with Serial(serial_path, 2000000) as serial_connection:
-        last_gas = 0
         while True:
             try:
                 line = serial_connection.readline().decode('utf-8').strip()
@@ -84,12 +83,8 @@ def handle_data(data, device):
     device.emit(BRAKE_EVENT, map_to_output(brake_value))
     device.emit(CLUTCH_EVENT, map_to_output(clutch_value))
 
-def map_value(value, in_min, in_max, out_min, out_max):
-    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
-
 def map_to_output(value):
-    mapped_value = map_value(value, 0, 0xFFFF, -0x7FFF, 0x7FFF)
-    return int(mapped_value)
+    return int(min(max(value, 0), 0xFFFF))
 
 if __name__ == '__main__':
     main()
