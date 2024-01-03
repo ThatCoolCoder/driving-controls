@@ -50,10 +50,7 @@ void calibrate()
 
     clutch_max = clutch.get_value(10U);
     clutch_min = clutch_max * start_deadzone;
-    show_message(String(clutch_min));
-    show_message(String(clutch_max));
     clutch_max -= clutch_max * end_deadzone;
-    show_message(String(clutch_max));
     repeated_beep(2);
 
     show_message("Please press accelerator fully for calibration");
