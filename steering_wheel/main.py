@@ -18,7 +18,6 @@ def map_value(value, in_min, in_max, out_min, out_max):
 
 def main(serial_path='/dev/ttyACM0'):
     print('Starting wheel...')
-    prev_rotations = 0
 
     device = uinput.Device(events, name="uinput-wheel")
     time.sleep(1)
