@@ -44,7 +44,7 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_6, 0, True)
     device.emit(uinput.BTN_7, 0, True)
     device.emit(uinput.BTN_8, 0, True)
-    device.emit(uinput.BTN_9, 0, True)
+    device.emt(uinput.BTN_9, 0, True)
 
     with Serial(serial_path, 2000000) as serial_connection:
         while True:

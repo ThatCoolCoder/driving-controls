@@ -7,8 +7,13 @@ clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
 
+STEERING_EVENT = uinput.ABS_Z
+CAMERA_HEADING_EVENT = uinput.ABS_RY
+
 events = (uinput.BTN_JOYSTICK,
-    uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
+    uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), STEERING_EVENT + (0, 0xFFFF, 0, 0),
+    CAMERA_HEADING_EVENT + (0, 0xFFFF, 0, 0),
+    
     uinput.ABS_RX,
     uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
     uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
@@ -62,12 +67,17 @@ def main(serial_path='/dev/ttyACM0'):
                 if debug:
                     print(f'Debug data: {data}')
                 
+
+                angle = map_value(float(data), -1, 1, 0, 0xFFFF)
+                device.emit(CAMERA_HEADING_EVENT, int(angle))
+                continue
+                
                 rotations = int(data) / clicks_per_rotation
                 rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
                 if inverted:
                     rotations = -rotations
                     
-                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 32768))
+                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 0xFFFF))
 
                 device.emit(uinput.ABS_Z, final_value)
             else:
