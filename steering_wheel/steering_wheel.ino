@@ -5,18 +5,14 @@
 // Inputs
 Encoders encoder(2,3);
 
-const int CLICKS_PER_REVOLUTION = 360 * 4;
-
 void setup()
 {
-	// Setuzp Serial Monitor
+	// Setup Serial Monitor
 	Serial.begin(2000000);
 }
 
 
 void loop() {
-	unsigned long crntTime = millis();
-
 	send_to_python(encoder.getEncoderCount());
 	delay(10);
 }
