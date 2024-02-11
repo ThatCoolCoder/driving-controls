@@ -1,17 +1,25 @@
 from serial import Serial
-import uinput
 import time
 
-debug = False
+from evdev import UInput, ecodes, AbsInfo
+
+e = ecodes.ecodes
+
+print(ecodes.ecodes)
+
+debug = True
 clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
 
-events = (uinput.BTN_JOYSTICK,
-    uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
-    uinput.ABS_RX,
-    uinput.ABS_HAT0X, uinput.ABS_HAT0Y,
-    uinput.BTN_0, uinput.BTN_1, uinput.BTN_2, uinput.BTN_3, uinput.BTN_4, uinput.BTN_5, uinput.BTN_6, uinput.BTN_7, uinput.BTN_8, uinput.BTN_9)
+cap = {
+    e.EV_BTN : [e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
+    e.EV_ABS: [
+        (e.ABS_X, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
+        (e.ABS_Y, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
+        (e.ABS_Z, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
+    ]
+}
 
 def map_value(value, in_min, in_max, out_min, out_max):
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
@@ -19,59 +27,62 @@ def map_value(value, in_min, in_max, out_min, out_max):
 def main(serial_path='/dev/ttyACM0'):
     print('Starting wheel...')
 
-    device = uinput.Device(events, name="uinput-wheel")
+    ui = UInput(cap, name="uinput-wheel")
     time.sleep(1)
 
     # random events to make steam recognise it as an input device
-    device.emit(uinput.ABS_X, 0, syn=False)
-    device.emit(uinput.ABS_Y, 0, syn=False)
-    device.emit(uinput.ABS_Z, 0, syn=False)
-    device.emit(uinput.ABS_RX, 0, syn=False)
-    device.emit(uinput.ABS_HAT0X, 0, True)
-    device.emit(uinput.ABS_HAT0Y, 0, True)
-    device.emit(uinput.BTN_JOYSTICK, 0, True)
-    device.emit(uinput.BTN_0, 0, True)
-    device.emit(uinput.BTN_1, 0, True)
-    device.emit(uinput.BTN_2, 0, True)
-    device.emit(uinput.BTN_3, 0, True)
-    device.emit(uinput.BTN_4, 0, True)
-    device.emit(uinput.BTN_5, 0, True)
-    device.emit(uinput.BTN_6, 0, True)
-    device.emit(uinput.BTN_7, 0, True)
-    device.emit(uinput.BTN_8, 0, True)
-    device.emit(uinput.BTN_9, 0, True)
+    ui.write(e.EV_ABS, e.ABS_X, 0)
+    ui.write(e.EV_ABS, e.ABS_Y, 0)
+    ui.write(e.EV_ABS, e.ABS_Z, 0)
+
+    # ui.write(uinput.ABS_RX, 0, False)
+    # ui.write(uinput.ABS_HAT0X, 0, True)
+    # ui.write(uinput.ABS_HAT0Y, 0, True)
+
+    ui.write(e.EV_BTN, e.BTN_0, 0)
+    ui.write(e.EV_BTN, e.BTN_1, 0)
+    ui.write(e.EV_BTN, e.BTN_2, 0)
+    ui.write(e.EV_BTN, e.BTN_3, 0)
+    ui.write(e.EV_BTN, e.BTN_4, 0)
+    ui.write(e.EV_BTN, e.BTN_5, 0)
+    ui.write(e.EV_BTN, e.BTN_6, 0)
+    ui.write(e.EV_BTN, e.BTN_7, 0)
 
     with Serial(serial_path, 2000000) as serial_connection:
         while True:
             try:
                 line = serial_connection.readline().decode('utf-8').strip()
+
+                if debug:
+                    print(f'Debug data: {line}')
+                
+                use_line(line, ui)
             except Exception:
                 print('Error parsing line')
                 time.sleep(1) # Avoid spamming terminal
                 continue
+
+prev = 0
+
+def use_line(line: str, ui: UInput):
+    global prev
+    split = line.split(',')
             
-            split_data = line.split(':', 1)
-            if len(split_data) < 2:
-                print(f'Line isn\'t in expected format (no colon): {line}')
-                continue
+    rotations = int(split[0]) / clicks_per_rotation
+    rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
+    if inverted:
+        rotations = -rotations
+        
+    final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 0x7fff))
 
-            (prefix, data) = split_data
-            if prefix == 'text':
-                print(f'Text: {data}')
-            elif prefix == 'data':
-                if debug:
-                    print(f'Debug data: {data}')
-                
-                rotations = int(data) / clicks_per_rotation
-                rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
-                if inverted:
-                    rotations = -rotations
-                    
-                final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 32768))
+    ui.write(e.EV_ABS, e.ABS_Z, final_value)
 
-                device.emit(uinput.ABS_Z, final_value)
-            else:
-                print(f'Unrecognised data type. Full line: {line}')
+
+    if int(split[1]) != prev:
+        print('click')
+        device.emit_click(uinput.BTN_JOYSTICK)
+    prev = int(split[1])
+    # device.emit_click(uinput.BTN_1)
 
 if __name__ == '__main__':
     main('/dev/ttyACM0')
