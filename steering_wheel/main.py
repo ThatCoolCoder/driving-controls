@@ -1,11 +1,8 @@
 from serial import Serial
 import time
 
-from evdev import UInput, ecodes, AbsInfo
+from evdev import UInput, ecodes as e, AbsInfo
 
-e = ecodes.ecodes
-
-print(ecodes.ecodes)
 
 debug = True
 clicks_per_rotation = 360 * 4
@@ -13,11 +10,11 @@ total_rotations = 3 # from full-left to full-right
 inverted = False
 
 cap = {
-    e.EV_BTN : [e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
+    e.EV_KEY : [e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
     e.EV_ABS: [
-        (e.ABS_X, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
-        (e.ABS_Y, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
-        (e.ABS_Z, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
+        (e.ABS_X, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=10)),
+        (e.ABS_Y, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=10)),
+        (e.ABS_Z, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=10)),
     ]
 }
 
@@ -39,14 +36,14 @@ def main(serial_path='/dev/ttyACM0'):
     # ui.write(uinput.ABS_HAT0X, 0, True)
     # ui.write(uinput.ABS_HAT0Y, 0, True)
 
-    ui.write(e.EV_BTN, e.BTN_0, 0)
-    ui.write(e.EV_BTN, e.BTN_1, 0)
-    ui.write(e.EV_BTN, e.BTN_2, 0)
-    ui.write(e.EV_BTN, e.BTN_3, 0)
-    ui.write(e.EV_BTN, e.BTN_4, 0)
-    ui.write(e.EV_BTN, e.BTN_5, 0)
-    ui.write(e.EV_BTN, e.BTN_6, 0)
-    ui.write(e.EV_BTN, e.BTN_7, 0)
+    ui.write(e.EV_KEY, e.BTN_0, 0)
+    ui.write(e.EV_KEY, e.BTN_1, 0)
+    ui.write(e.EV_KEY, e.BTN_2, 0)
+    ui.write(e.EV_KEY, e.BTN_3, 0)
+    ui.write(e.EV_KEY, e.BTN_4, 0)
+    ui.write(e.EV_KEY, e.BTN_5, 0)
+    ui.write(e.EV_KEY, e.BTN_6, 0)
+    ui.write(e.EV_KEY, e.BTN_7, 0)
 
     with Serial(serial_path, 2000000) as serial_connection:
         while True:
@@ -78,10 +75,9 @@ def use_line(line: str, ui: UInput):
     ui.write(e.EV_ABS, e.ABS_Z, final_value)
 
 
-    if int(split[1]) != prev:
-        print('click')
-        device.emit_click(uinput.BTN_JOYSTICK)
-    prev = int(split[1])
+    print(int(split[1]) == 1)
+    ui.write(e.EV_KEY, e.BTN_JOYSTICK, int(split[1]) == 1)
+    # prev = int(split[1])
     # device.emit_click(uinput.BTN_1)
 
 if __name__ == '__main__':
