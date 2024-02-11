@@ -1,20 +1,20 @@
 from serial import Serial
 import time
 
-from evdev import UInput, ecodes, AbsInfo
+from evdev import UInput, ecodes as e, AbsInfo
 
-e = ecodes.ecodes
-
-print(ecodes.ecodes)
-
-debug = True
+debug = False
 clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
 
 cap = {
-    e.EV_BTN : [e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
+    e.EV_KEY : [e.KEY_A, e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
     e.EV_ABS: [
+        (e.ABS_RX, AbsInfo(value = 0, min = 0, max = 255, fuzz=0, flat=0, resolution=0)),
+        (e.ABS_HAT0X, AbsInfo(value = 0, min = 0, max = 255, fuzz=0, flat=0, resolution=0)),
+        (e.ABS_HAT0Y, AbsInfo(value = 0, min = 0, max = 255, fuzz=0, flat=0, resolution=0)),
+
         (e.ABS_X, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
         (e.ABS_Y, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
         (e.ABS_Z, AbsInfo(value = 0, min = 0, max = 0x7fff, fuzz=0, flat=0, resolution=0)),
@@ -35,18 +35,18 @@ def main(serial_path='/dev/ttyACM0'):
     ui.write(e.EV_ABS, e.ABS_Y, 0)
     ui.write(e.EV_ABS, e.ABS_Z, 0)
 
-    # ui.write(uinput.ABS_RX, 0, False)
-    # ui.write(uinput.ABS_HAT0X, 0, True)
-    # ui.write(uinput.ABS_HAT0Y, 0, True)
+    ui.write(e.EV_ABS, e.ABS_RX, 0)
+    ui.write(e.EV_ABS, e.ABS_HAT0X, 0)
+    ui.write(e.EV_ABS, e.ABS_HAT0Y, 0)
 
-    ui.write(e.EV_BTN, e.BTN_0, 0)
-    ui.write(e.EV_BTN, e.BTN_1, 0)
-    ui.write(e.EV_BTN, e.BTN_2, 0)
-    ui.write(e.EV_BTN, e.BTN_3, 0)
-    ui.write(e.EV_BTN, e.BTN_4, 0)
-    ui.write(e.EV_BTN, e.BTN_5, 0)
-    ui.write(e.EV_BTN, e.BTN_6, 0)
-    ui.write(e.EV_BTN, e.BTN_7, 0)
+    ui.write(e.EV_KEY, e.BTN_0, 0)
+    ui.write(e.EV_KEY, e.BTN_1, 0)
+    ui.write(e.EV_KEY, e.BTN_2, 0)
+    ui.write(e.EV_KEY, e.BTN_3, 0)
+    ui.write(e.EV_KEY, e.BTN_4, 0)
+    ui.write(e.EV_KEY, e.BTN_5, 0)
+    ui.write(e.EV_KEY, e.BTN_6, 0)
+    ui.write(e.EV_KEY, e.BTN_7, 0)
 
     with Serial(serial_path, 2000000) as serial_connection:
         while True:
@@ -62,10 +62,7 @@ def main(serial_path='/dev/ttyACM0'):
                 time.sleep(1) # Avoid spamming terminal
                 continue
 
-prev = 0
-
 def use_line(line: str, ui: UInput):
-    global prev
     split = line.split(',')
             
     rotations = int(split[0]) / clicks_per_rotation
@@ -78,11 +75,10 @@ def use_line(line: str, ui: UInput):
     ui.write(e.EV_ABS, e.ABS_Z, final_value)
 
 
-    if int(split[1]) != prev:
-        print('click')
-        device.emit_click(uinput.BTN_JOYSTICK)
-    prev = int(split[1])
-    # device.emit_click(uinput.BTN_1)
+    ui.write(e.EV_KEY, e.BTN_0, int(split[1]) == 1)
+    ui.write(e.EV_KEY, e.BTN_1, int(split[2]) == 1)
+
+    ui.syn()
 
 if __name__ == '__main__':
     main('/dev/ttyACM0')
