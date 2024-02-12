@@ -7,6 +7,9 @@ debug = False
 clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
+buttons = [e.BTN_0, e.BTN_1, e.BTN_2]
+inverted_buttons = [e.BTN_0]
+button_debounce = 0.02
 
 cap = {
     e.EV_KEY : [e.KEY_A, e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
@@ -62,6 +65,9 @@ def main(serial_path='/dev/ttyACM0'):
                 time.sleep(1) # Avoid spamming terminal
                 continue
 
+buttons_last_changed = {}
+prev_button_values = {}
+
 def use_line(line: str, ui: UInput):
     split = line.split(',')
             
@@ -74,9 +80,25 @@ def use_line(line: str, ui: UInput):
 
     ui.write(e.EV_ABS, e.ABS_Z, final_value)
 
+    rest = split[1:]
 
-    ui.write(e.EV_KEY, e.BTN_0, int(split[1]) == 1)
-    ui.write(e.EV_KEY, e.BTN_1, int(split[2]) == 1)
+    for idx, val in enumerate(rest):
+        btn = buttons[idx]
+
+        intval = int(val)
+        if btn in inverted_buttons:
+            intval = 1 - intval
+
+        if btn not in buttons_last_changed:
+            buttons_last_changed[btn] = time.time()
+            prev_button_values[btn] = intval
+
+        else:
+            if intval != prev_button_values[btn] and (time.time() - buttons_last_changed[btn]) > button_debounce:
+                ui.write(e.EV_KEY, btn, intval == 1)
+                buttons_last_changed[btn] = time.time()
+
+            prev_button_values[btn] = intval
 
     ui.syn()
 

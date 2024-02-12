@@ -2,24 +2,28 @@
 #include <math.h>
 #include <QuadratureEncoder.h>
 
-#define DOWNSHIFT_HI 8
-#define DOWNSHIFT_IN 9
-
-// Inputs
 Encoders encoder(2,3);
+
+int buttons[] = {4, 5, 6};
+const int n_buttons = 3;
 
 void setup()
 {
-	// Setup Serial Monitor
 	Serial.begin(2000000);
 
-	pinMode(DOWNSHIFT_HI, OUTPUT);
-	digitalWrite(DOWNSHIFT_HI, LOW);
-	pinMode(DOWNSHIFT_IN, INPUT_PULLUP);
+	for (int i = 0; i < n_buttons; i ++) pinMode(buttons[i], INPUT_PULLUP);
 }
 
 
-void loop() {
-	Serial.println(String(encoder.getEncoderCount()) + "," + String(digitalRead(DOWNSHIFT_IN) == HIGH) + "," + "0");
+void loop()
+{
+	Serial.print(encoder.getEncoderCount());
+
+	for (int i = 0; i < n_buttons; i ++)
+	{
+		Serial.print(",");
+		Serial.print(digitalRead(buttons[i]) == HIGH);
+	}
+	Serial.print("\n");
 	delay(10);
 }
