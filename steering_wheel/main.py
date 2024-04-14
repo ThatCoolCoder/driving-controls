@@ -7,9 +7,10 @@ debug = False
 clicks_per_rotation = 360 * 4
 total_rotations = 3 # from full-left to full-right
 inverted = False
+
 buttons = [e.BTN_0, e.BTN_1, e.BTN_2]
 inverted_buttons = [e.BTN_0]
-button_debounce = 0.02
+button_debounce_times = [0.02, 0.05, 0.05]
 
 cap = {
     e.EV_KEY : [e.KEY_A, e.BTN_0, e.BTN_1, e.BTN_2, e.BTN_3, e.BTN_4, e.BTN_5, e.BTN_6, e.BTN_7],
@@ -94,7 +95,7 @@ def use_line(line: str, ui: UInput):
             prev_button_values[btn] = intval
 
         else:
-            if intval != prev_button_values[btn] and (time.time() - buttons_last_changed[btn]) > button_debounce:
+            if intval != prev_button_values[btn] and (time.time() - buttons_last_changed[btn]) > button_debounce_times[idx]:
                 ui.write(e.EV_KEY, btn, intval == 1)
                 buttons_last_changed[btn] = time.time()
 
