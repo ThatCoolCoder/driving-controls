@@ -14,3 +14,4 @@ There's code for adding a bunch of unused uinput channels as the controller woul
 - hx711 (by Rob Tillaart)
 - enableinterrupt (by Mike Schwager)
 - quadratureencoder (by Cheng Saetern)
+- [https://github.com/MHeironimus/ArduinoJoystickLibrary/](https://github.com/MHeironimus/ArduinoJoystickLibrary/) (needs to be manually downloaded and installed - see instructions on that page)

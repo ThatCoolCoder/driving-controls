@@ -3,23 +3,25 @@
 #include <QuadratureEncoder.h>
 #include <Joystick.h>
 
+#define OUTPUT_RANGE 0x7FFF
+
 Encoders encoder(2,3);
 
 const int n_buttons = 3;
 int buttons[n_buttons] = {4, 5, 6};
+int buttons_inverted[n_buttons] = {false, true, true};
 
 const int clicks_per_rotation = 360 * 4;
 const float n_rotations = 3;
 
-Joystick_ joystick;
+Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_MULTI_AXIS, max(n_buttons, 8), 0,
+	true, true, true, true, true, true, true, true, true, true, true);
 
 
 void setup()
 {
-	// Serial.begin(2000000);
-
 	joystick.begin();
-	joystick.setXAxisRange(0, 0XFFFF);
+	joystick.setXAxisRange(0, OUTPUT_RANGE);
 	for (int i = 0; i < n_buttons; i ++) pinMode(buttons[i], INPUT_PULLUP);
 
 }
@@ -27,15 +29,16 @@ void setup()
 void loop()
 {
 	float raw = encoder.getEncoderCount();
-	float val = map_value(raw, -clicks_per_rotation * n_rotations / 2.0f, clicks_per_rotation * n_rotations / 2.0f, 0, 0XFFFF);
+	float val = map_value(raw, -clicks_per_rotation * n_rotations / 2.0f, clicks_per_rotation * n_rotations / 2.0f, 0, OUTPUT_RANGE);
+
+	val = min(max(val, 0), OUTPUT_RANGE);
 
 	joystick.setXAxis((int)val);
 
-	// for (int i = 0; i < n_buttons; i ++)
-	// {
-	// 	Serial.print(",");
-	// 	Serial.print(digitalRead(buttons[i]) == HIGH);
-	// }
+	for (int i = 0; i < n_buttons; i ++)
+	{
+		joystick.setButton(i, (digitalRead(buttons[i]) == LOW) ^ buttons_inverted[i]);
+	}
 
 	delay(10);
 }

@@ -1,10 +1,9 @@
 Components:
 - arduino uno
-- quadrature rotary encoder (20ppr)
-- switch that goes LOW when wheel is at an integer number of revolutions
+- quadrature rotary encoder (360ppr works well)
 
 Connections:
 - rotary encoder power/gnd to arduino
 - 1st rotary encoder signal wire (possibly called clk) to pin 2
 - 2nd rotary encoder signal wire (possibly called dt) to pin 3
-- switch to ground and pin 5
+- buttons can be wired between pin 4/5/6 etc and ground, then the button config arrays in the arduino file should be modified to match this
