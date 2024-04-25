@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "HX711.h"
 
-#define BUZZER 8
-
 // Yes I know loops and arrays exist but there's only 3 of them, it's actually shorter & faster to just copy + paste
 HX711 accel;
 HX711 brake;
@@ -27,16 +25,12 @@ void setup()
     brake.begin(4, 5);
     clutch.begin(6, 7);
 
-    pinMode(BUZZER, OUTPUT);
-    digitalWrite(BUZZER, LOW);
-    
     calibrate();
 }
 
 void calibrate()
 {
     show_message("-- STARTING CALIBRATION --");
-    beep(300);
 
     accel.tare();
     brake.tare();
@@ -51,7 +45,6 @@ void calibrate()
     clutch_max = clutch.get_value(10U);
     clutch_min = clutch_max * start_deadzone;
     clutch_max -= clutch_max * end_deadzone;
-    repeated_beep(2);
 
     show_message("Please press accelerator fully for calibration");
     delay(2000);
@@ -60,7 +53,6 @@ void calibrate()
     accel_max -= accel_max * end_deadzone;
 
     show_message("Calibration complete");
-    repeated_beep(3);
 }
 
 void loop()
@@ -79,24 +71,6 @@ void show_message(String message)
 void send_data(String data)
 {
     Serial.println("data:" + data);
-}
-
-void beep(int duration)
-{
-
-    digitalWrite(BUZZER, HIGH);
-    delay(duration);
-    digitalWrite(BUZZER, LOW);
-}
-
-void repeated_beep(int times)
-{
-    for (int i = 0; i < times - 1; i ++)
-    {
-        beep(100);
-        delay(100);
-    }
-    beep(100);
 }
 
 float map_value(float value, float in_min, float in_max, float out_min, float out_max)
