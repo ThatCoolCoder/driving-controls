@@ -12,10 +12,19 @@ const float n_rotations = 3;
 
 Encoders encoder(2,3);
 
-const int n_buttons = 3;
-int buttons[n_buttons] = {4, 5, 6};
-int buttons_inverted[n_buttons] = {false, false, false};
-unsigned long button_debounce_times[n_buttons] = {50, 100, 100}; // in millis
+const int n_buttons = 8;
+int buttons[n_buttons] = {
+	4, 5, 6, 8,
+	9, 10, 11, 12
+};
+int buttons_inverted[n_buttons] = {
+	false, false, false, false,
+	false, false, false, false
+};
+unsigned long button_debounce_times[n_buttons] = {
+	50, 100, 100, 50,
+	50, 50, 50, 50
+}; // in millis
 
 const bool recenter_button_active = true;
 const int recenter_button_pin = 7;
@@ -25,7 +34,7 @@ const int recenter_button_pin = 7;
 int last_button_values[n_buttons];
 unsigned long buttons_last_changed[n_buttons];
 
-Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_MULTI_AXIS, n_buttons + (int) recenter_button_active, 0,
+Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_MULTI_AXIS, n_buttons, 0,
 	true, true, true, true, true, true, true, true, true, true, true);
 
 
