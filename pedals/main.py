@@ -1,6 +1,8 @@
-from serial import Serial
-import uinput
 import time
+
+from serial import Serial
+from serial.tools import list_ports
+import uinput
 
 debug = False
 
@@ -86,5 +88,17 @@ def handle_data(data, device):
 def map_to_output(value):
     return int(min(max(value, 0), 0xFFFF))
 
+def find_port_path():
+    # Determine which port is the correct one, so that we don't have to plug in devices in a certain order to match hardcoded path
+    # The only two serial devices I keep plugged in are this and the one for the wheel so checking if it's an arduino uno is sufficient
+
+    ports = list(list_ports.comports())
+
+    for port in ports:
+        if port.vid == 9025 and port.pid == 67:
+            return port.device
+    
+    return '/dev/ttyACM0'
+
 if __name__ == '__main__':
-    main()
+    main(find_port_path())
