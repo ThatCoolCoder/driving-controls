@@ -31,17 +31,27 @@ const int recenter_button_pin = 7;
 
 // END CONFIG
 
+// random joystick stuff
+
+Gains gains[2];
+EffectParams effect_params[2];
+
+// end random joystick stuff
+
+
 int last_button_values[n_buttons];
 unsigned long buttons_last_changed[n_buttons];
 
-Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_MULTI_AXIS, n_buttons, 0,
-	true, true, true, true, true, true, true, true, true, true, true);
+Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID,
+	JOYSTICK_TYPE_MULTI_AXIS, n_buttons, 0,
+	false, false, false, false, false, false,
+	false, false, true, true, true);
 
 
 void setup()
 {
 	joystick.begin();
-	joystick.setXAxisRange(0, OUTPUT_RANGE);
+	joystick.setSteeringRange(0, OUTPUT_RANGE);
 	for (int i = 0; i < n_buttons; i ++)
 	{
 		pinMode(buttons[i], INPUT_PULLUP);
@@ -49,6 +59,20 @@ void setup()
 		buttons_last_changed[i] = 0;
 	}
 	if (recenter_button_active) pinMode(recenter_button_pin, INPUT_PULLUP);
+	pinMode(13, OUTPUT);
+
+	//set X Axis gains
+	gains[0].totalGain = 50;
+	gains[0].springGain = 0;
+
+	//set Y Axis gains
+	gains[1].totalGain = 50;
+	gains[1].springGain = 0;
+	joystick.setGains(gains);
+
+	effect_params[0].springMaxPosition = 0;
+	effect_params[0].springPosition = 0;
+	joystick.setEffectParams(effect_params);
 }
 
 void loop()
@@ -58,24 +82,15 @@ void loop()
 
 	val = min(max(val, 0), OUTPUT_RANGE);
 
-	joystick.setXAxis((int)val);
-
-	for (int i = 0; i < n_buttons; i ++)
-	{
-		int new_val = (digitalRead(buttons[i]) == LOW) ^ buttons_inverted[i];
-		unsigned long now = millis();
-
-		if (new_val != last_button_values[i] && now - buttons_last_changed[i] >= button_debounce_times[i])
-		{
-			last_button_values[i] = new_val;
-			buttons_last_changed[i] = now;
-			joystick.setButton(i, new_val);
-		}
-	}
+	joystick.setSteering((int)val);
 
 	if (recenter_button_active && digitalRead(recenter_button_pin) == LOW) encoder.setEncoderCount(0);
 
-	delay(5); // slight delay helps debounce the encoder
+
+	int32_t forces[2] = {0};
+	joystick.getForce(forces);
+	if (forces[0] > 0) digitalWrite(13, HIGH);
+	else digitalWrite(13, LOW);
 }
 
 

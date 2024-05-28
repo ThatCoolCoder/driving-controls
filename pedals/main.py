@@ -2,12 +2,16 @@ from serial import Serial
 import uinput
 import time
 
+# CONFIG START
+
 debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
 GAS_EVENT = uinput.ABS_THROTTLE
 BRAKE_EVENT = uinput.ABS_X
 CLUTCH_EVENT = uinput.ABS_Y
+
+# CONFIG END
 
 events = (
     GAS_EVENT + (0, 0xFFFF, 0, 0), BRAKE_EVENT + (0, 0xFFFF, 0, 0), CLUTCH_EVENT + (0, 0xFFFF, 0, 0),
