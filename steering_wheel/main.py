@@ -1,9 +1,11 @@
-from serial import Serial
 from evdev import UInput, categorize, ecodes, AbsInfo
+import odrive
+from odrive.enums import *
 import time
+import math
 import threading
 
-from . import ui_debug
+import ui_debug
 
 debug = False
 clicks_per_rotation = 80
@@ -20,15 +22,20 @@ cap = {
     ecodes.EV_FF:  [ecodes.FF_AUTOCENTER, ecodes.FF_CONSTANT, ecodes.FF_CUSTOM, ecodes.FF_DAMPER, ecodes.FF_EFFECT_MAX, ecodes.FF_EFFECT_MIN, ecodes.FF_FRICTION, ecodes.FF_GAIN, ecodes.FF_INERTIA, ecodes.FF_MAX, ecodes.FF_MAX_EFFECTS, ecodes.FF_PERIODIC, ecodes.FF_RAMP, ecodes.FF_RUMBLE, ecodes.FF_SAW_DOWN, ecodes.FF_SAW_UP, ecodes.FF_SINE, ecodes.FF_SPRING, ecodes.FF_SINE, ecodes.FF_SQUARE],
     ecodes.EV_KEY: [ecodes.KEY_A, ecodes.KEY_B, ecodes.BTN_0, ecodes.BTN_1, ecodes.BTN_2, ecodes.BTN_3, ecodes.BTN_4, ecodes.BTN_5, ecodes.BTN_6, ecodes.BTN_7, ecodes.BTN_8, ecodes.BTN_9],
     ecodes.EV_ABS: [ecodes.ABS_X, ecodes.ABS_Y, ecodes.ABS_RX, ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y,
-        (ecodes.ABS_Z, AbsInfo(value=0, min=0, max=32768, fuzz=0, flat=0, resolution=0))] # this is the one that we actually care about
+        (ecodes.ABS_Z, AbsInfo(value=0, min=0, max=0xffff, fuzz=0, flat=0, resolution=0))] # this is the one that we actually care about
 }
 
 def map_value(value, in_min, in_max, out_min, out_max):
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
-def main(serial_path='/dev/ttyACM0'):
+running = True
+
+def main():
+    global running
     print('Starting wheel...')
-    prev_rotations = 0
+
+    import odrive
+    odrv0 = odrive.find_any()
 
     device = UInput(cap, name='uinput-wheel-ffb', version=0x3)
     time.sleep(1)
@@ -51,47 +58,33 @@ def main(serial_path='/dev/ttyACM0'):
     device.write(ecodes.EV_KEY, ecodes.BTN_8, 0)
     device.write(ecodes.EV_KEY, ecodes.BTN_9, 0)
 
-    with Serial(serial_path, 2000000) as serial_connection:
-        t = threading.Thread(target=lambda: input_loop(serial_connection, device))
-        t.start()
-        threading.Thread(target=lambda: receive_ffb_loop(serial_connection, device)).start()
-        threading.Thread(target=ui_debug.main).start()
-        t.join()
+    odrv0 = odrive.find_any()
 
-def input_loop(serial_connection, device):
-    while True:
-        try:
-            line = serial_connection.readline().decode('utf-8').strip()
-        except Exception:
-            print('Error parsing line')
-            time.sleep(1) # Avoid spamming terminal
-            continue
-        
-        split_data = line.split(':', 1)
-        if len(split_data) < 2:
-            print(f'Line isn\'t in expected format (no colon): {line}')
-            continue
+    odrv0.axis0.controller.config.control_mode = ControlMode.TORQUE_CONTROL
+    odrv0.axis0.controller.config.input_mode = InputMode.PASSTHROUGH
+    odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
 
-        (prefix, data) = split_data
-        if prefix == 'text':
-            print(f'Text: {data}')
-        elif prefix == 'data':
-            if debug:
-                print(f'Debug data: {data}')
-            
-            rotations = int(data) / clicks_per_rotation
-            rotations = min(total_rotations / 2, max(-total_rotations / 2, rotations))
-            if inverted:
-                rotations = -rotations
-                
-            final_value = int(map_value(rotations, -total_rotations / 2, total_rotations / 2, 0, 32768))
+    t = threading.Thread(target=lambda: input_loop(device, odrv0))
+    t.start()
+    # threading.Thread(target=ui_debug.main).start()
+    # t2 = threading.Thread(target=lambda: receive_ffb_loop(device, odrv0))
+    # t2.start()
+    # t2.join()
 
-            device.write(ecodes.EV_ABS, ecodes.ABS_Z, final_value)
-            device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
-        else:
-            print(f'Unrecognised data type. Full line: {line}')
+    try:
+        receive_ffb_loop(device, odrv0)
+    except KeyboardInterrupt:
+        device.close()
+        running = False
 
-def receive_ffb_loop(serial_connection, device):
+def input_loop(device, odrv0):
+    while running:
+        val = map_value(odrv0.axis0.pos_estimate, -1.5, 1.5, 0, 0xffff)
+        device.write(ecodes.EV_ABS, ecodes.ABS_Z, int(val))
+        device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
+        time.sleep(0.01)
+
+def receive_ffb_loop(device, odrv0):
     for event in device.read_loop():
         # print(categorize(event))
 
@@ -110,7 +103,15 @@ def receive_ffb_loop(serial_connection, device):
             device.end_upload(upload)
 
             # serial_connection.write(bytes(f'{force}\n', 'utf-8'))
-            ui_debug.set_val(force)
+            odrv0.axis0.controller.input_torque = force / 10
+            odrv0.axis0.watchdog_feed()
+            print(force)
+            if odrv0.axis0.current_state != AxisState.CLOSED_LOOP_CONTROL:
+                odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
+                print(odrv0.axis0.disarm_reason)
+                print("forcing odrive back on")
+
+            # ui_debug.set_val(force)
 
         elif event.code == ecodes.UI_FF_ERASE:
             erase = device.begin_erase(event.value)
@@ -120,4 +121,4 @@ def receive_ffb_loop(serial_connection, device):
             device.end_erase(erase)
 
 if __name__ == '__main__':
-    main('/dev/ttyACM0')
+    main()

@@ -1,6 +1,8 @@
-from serial import Serial
-import uinput
 import time
+
+from serial import Serial
+from serial.tools import list_ports
+import uinput
 
 debug = False
 
@@ -10,7 +12,7 @@ BRAKE_EVENT = uinput.ABS_X
 CLUTCH_EVENT = uinput.ABS_Y
 
 events = (
-    GAS_EVENT + (0, 0x7FFF, 0, 0), BRAKE_EVENT + (0, 0x7FFF, 0, 0), CLUTCH_EVENT + (0, 0x7FFF, 0, 0),
+    GAS_EVENT + (0, 0xFFFF, 0, 0), BRAKE_EVENT + (0, 0xFFFF, 0, 0), CLUTCH_EVENT + (0, 0xFFFF, 0, 0),
 
     # random stuff to make sure steam recognises it as a controller
     uinput.BTN_JOYSTICK,
@@ -47,7 +49,6 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.BTN_9, 0, True)
 
     with Serial(serial_path, 2000000) as serial_connection:
-        last_gas = 0
         while True:
             try:
                 line = serial_connection.readline().decode('utf-8').strip()
@@ -84,12 +85,20 @@ def handle_data(data, device):
     device.emit(BRAKE_EVENT, map_to_output(brake_value))
     device.emit(CLUTCH_EVENT, map_to_output(clutch_value))
 
-def map_value(value, in_min, in_max, out_min, out_max):
-    return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
-
 def map_to_output(value):
-    mapped_value = map_value(value, 0, 0xFFFF, -0x7FFF, 0x7FFF)
-    return int(mapped_value)
+    return int(min(max(value, 0), 0xFFFF))
+
+def find_port_path():
+    # Determine which port is the correct one, so that we don't have to plug in devices in a certain order to match hardcoded path
+    # The only two serial devices I keep plugged in are this and the one for the wheel so checking if it's an arduino uno is sufficient
+
+    ports = list(list_ports.comports())
+
+    for port in ports:
+        if port.vid == 9025 and port.pid == 67:
+            return port.device
+    
+    return '/dev/ttyACM0'
 
 if __name__ == '__main__':
-    main()
+    main(find_port_path())
