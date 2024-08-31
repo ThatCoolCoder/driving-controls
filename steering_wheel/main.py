@@ -1,16 +1,36 @@
-from evdev import UInput, categorize, ecodes, AbsInfo
-import odrive
 from odrive.enums import *
 import time
 import math
 import threading
+from dataclasses import dataclass
+
+from dataclasses_json import dataclass_json
+from evdev import UInput, categorize, ecodes, AbsInfo
+import odrive
 
 import ui_debug
 
-debug = False
-clicks_per_rotation = 80
-total_rotations = 3 # from full-left to full-right
-inverted = False
+@dataclass_json
+@dataclass
+class Config:
+    sensitivity: float = 0.1
+    damping: float = 0.1
+    total_rotations: float = 4
+    ignore_odrive_errors: bool = False
+    auto_reread_config: bool = False # useful for dev
+    print_ffb_debug: bool = False
+
+class ConfigBox:
+    config: Config
+    def __init__(self, config: Config):
+        self.config = config
+
+class SteeringInfo:
+    def __init__(self):
+        self.last_steering = None
+        self.last_steering_time = None
+        self.steering = None
+        self.steering_time = None
 
 # events = (uinput.BTN_JOYSTICK,
 #     uinput.ABS_X + (0, 255, 0, 0), uinput.ABS_Y + (0, 255, 0, 0), uinput.ABS_Z + (0, 32768, 0, 0),
@@ -30,12 +50,30 @@ def map_value(value, in_min, in_max, out_min, out_max):
 
 running = True
 
+def try_find_config(create_on_missing=True):
+    try:
+        with open('config.json', 'r') as f:
+            return Config.from_json(f.read())
+    except FileNotFoundError:
+        if not create_on_missing:
+            raise
+        with open('config.json', 'w+') as f:
+            config = Config()
+            f.write(config.to_json(indent=4))
+            print('Config file config.json not found, writing template config to there')
+            return config
+
 def main():
     global running
     print('Starting wheel...')
 
     import odrive
     odrv0 = odrive.find_any()
+
+    config = try_find_config()
+    config_box = ConfigBox(config)
+
+    steering_info = SteeringInfo()
 
     device = UInput(cap, name='uinput-wheel-ffb', version=0x3)
     time.sleep(1)
@@ -64,27 +102,46 @@ def main():
     odrv0.axis0.controller.config.input_mode = InputMode.PASSTHROUGH
     odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
 
-    t = threading.Thread(target=lambda: input_loop(device, odrv0))
+    t = threading.Thread(target=lambda: input_loop(device, odrv0, config_box, steering_info))
     t.start()
+
+    if config.auto_reread_config:
+        t2 = threading.Thread(target=lambda: reread_config_loop(config_box))
+        t2.start()
     # threading.Thread(target=ui_debug.main).start()
     # t2 = threading.Thread(target=lambda: receive_ffb_loop(device, odrv0))
     # t2.start()
     # t2.join()
 
     try:
-        receive_ffb_loop(device, odrv0)
+        receive_ffb_loop(device, odrv0, config_box, steering_info)
     except KeyboardInterrupt:
         device.close()
         running = False
-
-def input_loop(device, odrv0):
+    
+def reread_config_loop(config_box: ConfigBox):
     while running:
-        val = map_value(odrv0.axis0.pos_estimate, -1.5, 1.5, 0, 0xffff)
+        config_box.config = try_find_config(create_on_missing=False)
+        time.sleep(5)
+
+def input_loop(device, odrv0, config_box: ConfigBox, steering_info: SteeringInfo):
+    while running:
+        endpoint = config_box.config.total_rotations / 2
+        now = time.perf_counter()
+
+        val = map_value(odrv0.axis0.pos_estimate, -endpoint, endpoint, 0, 0xffff)
+
+        steering_info.last_steering = steering_info.steering
+        steering_info.last_steering_time = steering_info.steering_time
+        steering_info.steering_time = now
+        steering_info.steering = val
+
         device.write(ecodes.EV_ABS, ecodes.ABS_Z, int(val))
         device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
         time.sleep(0.01)
 
-def receive_ffb_loop(device, odrv0):
+
+def receive_ffb_loop(device, odrv0, config_box: ConfigBox, steering_info: SteeringInfo):
     for event in device.read_loop():
         # print(categorize(event))
 
@@ -98,20 +155,35 @@ def receive_ffb_loop(device, odrv0):
             upload.retval = 0
 
             const = upload.effect.u.ff_constant_effect
-            force = const.level
+            raw_force = const.level
 
             device.end_upload(upload)
 
             # serial_connection.write(bytes(f'{force}\n', 'utf-8'))
-            odrv0.axis0.controller.input_torque = force / 10
+
+            scaled_force = raw_force * config_box.config.sensitivity
+            damped_force = scaled_force
+            if steering_info.last_steering is not None:
+                damped_force += (steering_info.last_steering - steering_info.steering) / (steering_info.steering_time - steering_info.last_steering_time) * config_box.config.damping * 0.0001
+            
+            if config_box.config.print_ffb_debug:
+                print('------------')
+                print(f'Raw force: {raw_force}')
+                print(f'Scaled force: {scaled_force}')
+                print(f'Damped force: {damped_force}')
+            
+
+            odrv0.axis0.controller.input_torque = damped_force
             odrv0.axis0.watchdog_feed()
-            print(force)
+
             if odrv0.axis0.current_state != AxisState.CLOSED_LOOP_CONTROL:
-                odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
                 print(odrv0.axis0.disarm_reason)
-                print("forcing odrive back on")
+                if config_box.config.ignore_odrive_errors:
+                    odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
+                    print("forcing odrive back on")
 
             # ui_debug.set_val(force)
+            time.time()
 
         elif event.code == ecodes.UI_FF_ERASE:
             erase = device.begin_erase(event.value)
@@ -119,6 +191,9 @@ def receive_ffb_loop(device, odrv0):
 
             erase.retval = 0
             device.end_erase(erase)
+        
+        else:
+            print(event.code)
 
 if __name__ == '__main__':
     main()
