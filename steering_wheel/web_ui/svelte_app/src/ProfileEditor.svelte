@@ -52,8 +52,8 @@
         </div>
     </ApiDependent>
     <div class="d-flex flex-row gap-2 align-items-center justify-content-center">
-        <button class="btn btn-primary" on:click={save}>Save</button>
-        <button class="btn btn-secondary" on:click={setAsActive}>Activate</button>
-        <button class="btn btn-secondary" on:click={loadData}>Reset</button>
+        <button class="btn btn-primary"gacp  on:click={save}><i class="bi-floppy" /> Save</button>
+        <button class="btn btn-secondary" on:click={setAsActive}><i class="bi-lightning" /> Activate</button>
+        <button class="btn btn-secondary" on:click={loadData}><i class="bi-x-lg" /> Reset</button>
     </div>
 </div>
