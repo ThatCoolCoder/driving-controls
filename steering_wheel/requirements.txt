@@ -1,0 +1,5 @@
+argparse
+pydantic
+fastapi
+uvicorn
+# python-evdev also needed, must be installed through system package manager

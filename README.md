@@ -10,6 +10,10 @@ Only works on Linux.
 
 The wheel is built from a hoverboard motor (direct drive) and controlled by an odrive s1, this is actually the only microprocessor used. The inbuilt hall encoder on the s1 is used. There is a python program that communicates with the odrive. It uses an evdev virtual device to receive ffb events and send the rotation info back. This appears to have acceptable latency when playing games natively (proton is worse but still decent).
 
+#### Installation notes
+
+In addition to installing from `steering_wheel/requirements.txt`, you will also need to install python-evdev from your system package manager (it is not on pypi).
+
 ### Pedals
 
 All three pedals are load-cell, they are connected to the computer through an Arduino Uno. As Unos don't have the capability to act as USB HID devices, it just dumps the data to a serial, where a python program reads this and sends it to a virtual UInput device, which can then be seen by the game. 
@@ -19,7 +23,7 @@ This will be switched to an Arduino Leonardo at some point (thus improving laten
 
 Both the wheel and pedals have code for adding a bunch of unused uinput channels as the controller wouldn't show up in BeamNG running through proton.
 
-## arduino libraries to install
+## arduino libraries to install for pedals
 - hx711 (by Rob Tillaart)
 - enableinterrupt (by Mike Schwager)
 - quadratureencoder (by Cheng Saetern)

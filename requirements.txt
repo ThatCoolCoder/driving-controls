@@ -1,4 +1,0 @@
-pyserial
-python-uinput
-python-evdev
-dataclasses-json
