@@ -1,14 +1,23 @@
 # Driving Controls
 
-Code for my Arduino-based DIY wheel and pedals. It's not the best code but it gets the job done. It's not designed to be very configurable; if you want to use it you'll have to go changing things directly in the code. I've mainly put it on Github for backup purposes.
+Code for my DIY sim wheel and pedals. It's not the best code but it gets the job done. It's not designed to be very configurable; if you want to use it you'll have to go changing things directly in the code. I've mainly put it on Github for backup purposes.
 
-Sorry, Linux only.
+Only works on Linux.
 
-## Basic architecture
+## Architecture
 
-As I only had an Arduino Uno when first making the wheel, I couldn't directly make it work as a USB device, so it instead just dumps the data to a serial, where a python program reads this and sends it to a virtual UInput device, which is then picked up in game. I could have switched over to a Leonardo when buying a second arduino for the pedals but this method worked and I didn't want to change anythign. Perhaps it would give slightly lower latency but I'm happy enough as it is. Perhaps upon trying to make FFB work I'll find the round-trip latency is not ok and I'll change it.
+### Wheel
 
-There's code for adding a bunch of unused uinput channels as the controller wouldn't show up in BeamNG running through proton.
+The wheel is built from a hoverboard motor (direct drive) and controlled by an odrive s1, this is actually the only microprocessor used. The inbuilt hall encoder on the s1 is used. There is a python program that communicates with the odrive. It uses an evdev virtual device to receive ffb events and send the rotation info back. This appears to have acceptable latency when playing games natively (proton is worse but still decent).
+
+### Pedals
+
+All three pedals are load-cell, they are connected to the computer through an Arduino Uno. As Unos don't have the capability to act as USB HID devices, it just dumps the data to a serial, where a python program reads this and sends it to a virtual UInput device, which can then be seen by the game. 
+
+This will be switched to an Arduino Leonardo at some point (thus improving latency and no longer requiring a program running on the pc)
+
+
+Both the wheel and pedals have code for adding a bunch of unused uinput channels as the controller wouldn't show up in BeamNG running through proton.
 
 ## arduino libraries to install
 - hx711 (by Rob Tillaart)
