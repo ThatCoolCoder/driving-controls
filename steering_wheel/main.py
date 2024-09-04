@@ -161,7 +161,7 @@ def receive_ffb_loop(device, odrv0, config_box: ConfigBox, steering_info: Steeri
 
             # serial_connection.write(bytes(f'{force}\n', 'utf-8'))
 
-            scaled_force = raw_force * config_box.config.sensitivity
+            scaled_force = raw_force * config_box.config.sensitivity * 0.001
             damped_force = scaled_force
             if steering_info.last_steering is not None:
                 damped_force += (steering_info.last_steering - steering_info.steering) / (steering_info.steering_time - steering_info.last_steering_time) * config_box.config.damping * 0.0001
