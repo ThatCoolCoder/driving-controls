@@ -1,0 +1,24 @@
+{
+    "odrive_settings": {
+        "ignore_odrive_errors": false,
+        "print_ffb_debug": false
+    },
+    "profiles": {
+        "Profile 1": {
+            "name": "Profile 1",
+            "description": "",
+            "sensitivity": 1.0,
+            "damping": 0.1,
+            "slop": 0.0,
+            "total_rotations": 4.0
+        }
+    },
+    "active_profile": {
+        "name": "active",
+        "description": "",
+        "sensitivity": 1.0,
+        "damping": 0.1,
+        "slop": 0.0,
+        "total_rotations": 4.0
+    }
+}

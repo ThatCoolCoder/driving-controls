@@ -50,6 +50,22 @@
                 <input type="number" bind:value={ profile.damping } />
             </div>
         </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                Slop amount (rotations)
+            </div>
+            <div class="col">
+                <input type="number" bind:value={ profile.slop } />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                Total rotations lock to lock
+            </div>
+            <div class="col">
+                <input type="number" bind:value={ profile.total_rotations } />
+            </div>
+        </div>
     </ApiDependent>
     <div class="d-flex flex-row gap-2 align-items-center justify-content-center">
         <button class="btn btn-primary"gacp  on:click={save}><i class="bi-floppy" /> Save</button>
