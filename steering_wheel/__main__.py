@@ -18,8 +18,8 @@ def try_load_wheel_settings(create_on_missing=True) -> WheelSettings:
             raise
 
         print(F'Config file {WHEEL_SETTINGS_FILE} not found, writing default settings to there')
-        save_wheel_settings(settings)
         settings = create_default_settings()
+        save_wheel_settings(settings)
 
         return settings
 
