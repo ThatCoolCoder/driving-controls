@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from steering_wheel.models import FFBProfile, Box, WheelSettings, ODriveSettings
+from steering_wheel.wheel_driver import WheelDriver
 
 app = FastAPI()
 
@@ -9,6 +10,7 @@ ACTIVE_PROFILE_NAME = 'active'
 
 apply_settings_func = lambda: None
 active_settings_box: Box[WheelSettings] = None
+wheel_driver: WheelDriver | None  = None
 
 app.mount('/app/', StaticFiles(directory='steering_wheel/web_ui/static/', html=True), name='static')
 
@@ -52,10 +54,23 @@ async def save_odrive_settings(odrive_settings: ODriveSettings):
 
     apply_settings_func()
 
+
+
 @app.get('/wheeldriver/status')
-async def get_wheel_driver_status():
-    return {'active': True}
+async def wheel_driver_get_status():
+    return {'active': wheel_driver is not None}
+
+@app.post('/wheeldriver/pause')
+async def wheel_driver_pause():
+    if wheel_driver is not None:
+        wheel_driver.pause_odrive()
+
+@app.post('/wheeldriver/unpause')
+async def wheel_driver_unpause():
+    if wheel_driver is not None:
+        wheel_driver.init_odrive()
 
 @app.post('/wheeldriver/clearerrors')
-async def clear_wheel_driver_errors():
-    pass
+async def wheel_driver_clear_errors():
+    if wheel_driver is not None:
+        wheel_driver.clear_errors()

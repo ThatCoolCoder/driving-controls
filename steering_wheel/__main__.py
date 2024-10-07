@@ -8,6 +8,7 @@ import time
 from pydantic import TypeAdapter
 
 from steering_wheel.models import WheelSettings, WheelDriverSettings, FFBProfile, Box, WHEEL_SETTINGS_FILE
+from steering_wheel.wheel_driver import WheelDriver
 
 def try_load_wheel_settings(create_on_missing=True) -> WheelSettings:
     try:
@@ -76,11 +77,12 @@ def main():
 
     apply_settings(no_save=True)
 
+    wheel_driver = None
     if not args.ui_only:
-        start_wheel_driver(args, wheel_driver_box)
+        wheel_driver = start_wheel_driver(args, wheel_driver_box)
 
     if not args.terminal_only:
-        start_web_ui(args, apply_settings, settings_box)
+        start_web_ui(args, apply_settings, settings_box, wheel_driver)
     
     if args.terminal_only and args.monitor_settings:
         start_reread_config_loop(args, apply_settings)
@@ -90,17 +92,20 @@ def main():
         time.sleep(0.5)
 
 def start_wheel_driver(args, wheel_driver_box):
-    from steering_wheel.wheel_driver import main
+    wheel_driver = WheelDriver(wheel_driver_box)
 
-    t = threading.Thread(target=lambda: main(wheel_driver_box))
+    t = threading.Thread(target=lambda: wheel_driver.run())
     t.start()
 
-def start_web_ui(args, apply_settings, settings_box):
+    return wheel_driver
+
+def start_web_ui(args, apply_settings, settings_box, wheel_driver):
     from steering_wheel.web_ui import main, app
     import uvicorn
 
     main.apply_settings_func = apply_settings
     main.active_settings_box = settings_box
+    main.wheel_driver = wheel_driver
 
     t = threading.Thread(target=lambda: uvicorn.run(app, host='localhost', port=args.port))
     t.start()
