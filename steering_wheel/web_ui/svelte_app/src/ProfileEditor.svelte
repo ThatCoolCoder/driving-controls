@@ -52,14 +52,6 @@
         </div>
         <div class="row mb-3">
             <div class="col-6">
-                Slop amount (rotations)
-            </div>
-            <div class="col">
-                <input type="number" bind:value={ profile.slop } />
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-6">
                 Total rotations lock to lock
             </div>
             <div class="col">

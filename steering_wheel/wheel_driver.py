@@ -13,12 +13,9 @@ from steering_wheel import number_utils
 class SteeringInfo:
     def __init__(self):
         self.last_steering = 0 # last steering unfiltered
-        self.last_steering_with_slop = 0 # last steering after slop was applied
         self.last_steering_time = None
         self.steering = 0
-        self.steering_with_slop = 0
         self.steering_time = None
-        self.accumulated_slop = 0
 
 capabilties = {
     ecodes.EV_FF:  [ecodes.FF_AUTOCENTER, ecodes.FF_CONSTANT, ecodes.FF_CUSTOM, ecodes.FF_DAMPER, ecodes.FF_EFFECT_MAX, ecodes.FF_EFFECT_MIN, ecodes.FF_FRICTION, ecodes.FF_GAIN, ecodes.FF_INERTIA, ecodes.FF_MAX, ecodes.FF_MAX_EFFECTS, ecodes.FF_PERIODIC, ecodes.FF_RAMP, ecodes.FF_RUMBLE, ecodes.FF_SAW_DOWN, ecodes.FF_SAW_UP, ecodes.FF_SINE, ecodes.FF_SPRING, ecodes.FF_SINE, ecodes.FF_SQUARE],
@@ -96,28 +93,14 @@ def input_loop(device, odrv0, settings_box: Box[WheelDriverSettings], steering_i
 
         rotations = odrv0.axis0.pos_estimate
 
-        rotations_with_slop = rotations
-        slop_amount = settings_box.value.ffb_profile.slop
-        if slop_amount > 0:
-            # if slop is active, simulate that
-            delta = rotations - steering_info.last_steering
-            steering_info.accumulated_slop += delta
-            if abs(steering_info.accumulated_slop) > slop_amount:
-                steering_info.accumulated_slop = min(slop_amount, max(-slop_amount, steering_info.accumulated_slop))
-            rotations_with_slop = rotations - steering_info.accumulated_slop / 2 # I don't know why this works but it does
-        else:
-            steering_info.accumulated_slop = 0
-
         steering_info.last_steering = steering_info.steering
-        steering_info.last_steering_with_slop = steering_info.steering_with_slop
-        steering_info.du = steering_info.steering_time
+        steering_info.last_steering_time = steering_info.steering_time
 
         steering_info.steering_time = now
         steering_info.steering = rotations
-        steering_info.steering_with_slop = rotations_with_slop
 
         endpoint = settings_box.value.ffb_profile.total_rotations / 2
-        steering_value = number_utils.map_value(rotations_with_slop, -endpoint, endpoint, 0, 0xffff)
+        steering_value = number_utils.map_value(rotations, -endpoint, endpoint, 0, 0xffff)
         device.write(ecodes.EV_ABS, ecodes.ABS_Z, int(steering_value))
         device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
         time.sleep(0.01) # todo: should this be smaller or adjustable
