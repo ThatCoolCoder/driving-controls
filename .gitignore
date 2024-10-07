@@ -1,5 +1,6 @@
 .vscode
 settings.json
+wheel_settings.json
 
 node_modules/
 
