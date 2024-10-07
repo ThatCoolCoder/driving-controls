@@ -110,7 +110,7 @@ def input_loop(device, odrv0, settings_box: Box[WheelDriverSettings], steering_i
 
         steering_info.last_steering = steering_info.steering
         steering_info.last_steering_with_slop = steering_info.steering_with_slop
-        steering_info.last_steering_time = steering_info.steering_time
+        steering_info.du = steering_info.steering_time
 
         steering_info.steering_time = now
         steering_info.steering = rotations
@@ -146,6 +146,8 @@ def receive_ffb_loop(device, odrv0, settings_box: Box[WheelDriverSettings], stee
             if odrv0.axis0.current_state != AxisState.CLOSED_LOOP_CONTROL:
                 print(odrv0.axis0.disarm_reason)
                 if settings_box.value.odrive_settings.ignore_odrive_errors:
+                    time.sleep(1)
+                    odrv0.clear_errors()
                     odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
                     print("forcing odrive back on")
 
@@ -169,7 +171,7 @@ def apply_force(raw_force: float, odrv0, settings_box: Box[WheelDriverSettings],
 
     scaled_force = raw_force * profile.sensitivity * 0.001 # convert from millinm to nm? Was getting constant clipping without this
     damped_force = scaled_force
-    if steering_info.last_steering is not None:
+    if steering_info.last_steering_time is not None:
         damped_force += (steering_info.last_steering - steering_info.steering) / (steering_info.steering_time - steering_info.last_steering_time) * profile.damping * 0.0001
     
     if settings_box.value.odrive_settings.print_ffb_debug:

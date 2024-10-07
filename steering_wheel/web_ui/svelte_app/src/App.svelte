@@ -5,19 +5,19 @@
 
 	import api from "./services/api";
     import ApiDependent from "./misc/ApiDependent.svelte";
+    import ODriveSettingsEditor from "./ODriveSettingsEditor.svelte";
+    import WheelDriverLivePanel from "./WheelDriverLivePanel.svelte";
 
 	let profileNames;
-
-	async function getProfileNames() {
-		profileNames = await api.get(`profilenames`, "Failed loading profile names");
-	}
 
 	async function createNewProfile() {
 		var name = prompt("Enter name for new profile:");
 		profileNames.push(name);
 	}
 
-	onMount(getProfileNames);
+	onMount(async () => {
+		profileNames = await api.get(`profilenames`, "Failed loading profile names");
+	});
 </script>
 
 <ApiDependent ready={profileNames != null}>
@@ -25,10 +25,14 @@
 		{#each profileNames as name}
 			<ProfileEditor name={name}/>
 		{/each}
+		<br />
+		<ODriveSettingsEditor />
 		<!-- <hr />
 		<div>
 			<button class="btn btn-primary" on:click={createNewProfile}><i class="bi-plus" /></button>
 		</div> -->
+		<br />
+		<WheelDriverLivePanel />
 	</div>
 </ApiDependent>
 

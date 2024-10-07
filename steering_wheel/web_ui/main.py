@@ -51,3 +51,11 @@ async def save_odrive_settings(odrive_settings: ODriveSettings):
     active_settings_box.value.odrive_settings = odrive_settings
 
     apply_settings_func()
+
+@app.get('/wheeldriver/status')
+async def get_wheel_driver_status():
+    return {'active': True}
+
+@app.post('/wheeldriver/clearerrors')
+async def clear_wheel_driver_errors():
+    pass
