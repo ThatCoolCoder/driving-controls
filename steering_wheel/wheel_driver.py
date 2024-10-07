@@ -38,7 +38,8 @@ class WheelDriver:
             return
 
         self.running = True
-        self.init_odrive()
+        if not self.settings_box.value.odrive_settings.start_odrive_paused:
+            self.init_odrive()
         self.steering_info = SteeringInfo()
 
         self.device = UInput(capabilties, name='Evdev FFB Wheel', version=0x3)

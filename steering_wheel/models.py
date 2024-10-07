@@ -22,6 +22,7 @@ class FFBProfile:
 class ODriveSettings:
     ignore_odrive_errors: bool = False
     print_ffb_debug: bool = False
+    start_odrive_paused: bool = False
 
 @dataclass
 class WheelDriverSettings:

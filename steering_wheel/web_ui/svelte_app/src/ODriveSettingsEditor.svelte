@@ -40,6 +40,14 @@
                 <input type="checkbox" bind:checked={ settings.print_ffb_debug } />
             </div>
         </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                Start with ODrive paused
+            </div>
+            <div class="col">
+                <input type="checkbox" bind:checked={ settings.start_odrive_paused } />
+            </div>
+        </div>
     </ApiDependent>
     <div class="d-flex flex-row gap-2 align-items-center justify-content-center">
         <button class="btn btn-primary"gacp  on:click={save}><i class="bi-floppy" /> Save</button>
