@@ -68,9 +68,19 @@ async def wheel_driver_pause():
 @app.post('/wheeldriver/unpause')
 async def wheel_driver_unpause():
     if wheel_driver is not None:
-        wheel_driver.init_odrive()
+        wheel_driver.unpause_odrive()
 
 @app.post('/wheeldriver/clearerrors')
 async def wheel_driver_clear_errors():
     if wheel_driver is not None:
         wheel_driver.clear_errors()
+
+@app.post('/wheeldriver/disconnectodrive')
+async def wheel_driver_disconnect_odrive():
+    if wheel_driver is not None:
+        wheel_driver.disconnect_odrive()
+
+@app.post('/wheeldriver/reconnectodrive')
+async def wheel_driver_reconnect_odrive():
+    if wheel_driver is not None:
+        wheel_driver.reconnect_odrive()

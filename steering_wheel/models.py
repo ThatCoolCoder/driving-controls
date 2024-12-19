@@ -13,6 +13,7 @@ class FFBProfile:
     description: str = ''
     sensitivity: float = 1
     damping: float = 0.1
+    latency_compensation: float = 0
 
     # if your game supports applying steering lock forces for vehicles that have smaller rotations,
     # then set this nice and high and let the game handle it

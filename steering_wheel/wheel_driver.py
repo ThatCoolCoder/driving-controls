@@ -23,23 +23,20 @@ capabilties = {
 }
 
 class WheelDriver:
+    paused = True
+    disconnected = False
+
     def __init__(self, settings_box: Box[WheelDriverSettings]):
         self.settings_box = settings_box
         
     def run(self):
         print('Starting wheel...')
 
-        print('Searching for odrive...')
-        self.odrv0 = None
-        try:
-            self.odrv0 = odrive.find_any(timeout=10)
-        except TimeoutError:
-            print('Failed to find odrive, please check it is plugged in and accessible from other programs')
-            return
+        self.find_odrive()
 
         self.running = True
         if not self.settings_box.value.odrive_settings.start_odrive_paused:
-            self.init_odrive()
+            self.unpause_odrive()
         self.steering_info = SteeringInfo()
 
         self.device = UInput(capabilties, name='Evdev FFB Wheel', version=0x3)
@@ -54,14 +51,52 @@ class WheelDriver:
         except KeyboardInterrupt:
             self.device.close()
 
+    def find_odrive(self):
+        print('Searching for odrive...')
+        self.odrv0 = None
+        try:
+            self.odrv0 = odrive.find_any(timeout=10)
+        except TimeoutError:
+            print('Failed to find odrive, please check it is plugged in and accessible from other programs')
+            return
         
-    def init_odrive(self):
+    def setup_odrive(self):
         self.odrv0.axis0.controller.config.control_mode = ControlMode.TORQUE_CONTROL
         self.odrv0.axis0.controller.config.input_mode = InputMode.PASSTHROUGH
         self.odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
+    
+    def clear_errors(self):
+        self.odrv0.clear_errors()
+        self.odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
+
+    @property
+    def active(self):
+        return not self.paused and not self.disconnected
+    
+
 
     def pause_odrive(self):
         self.odrv0.axis0.requested_state = AxisState.IDLE
+        self.paused = True
+
+    def unpause_odrive(self):
+        self.setup_odrive()
+        self.paused = False
+
+    def disconnect_odrive(self):
+        old_val = self.paused
+        self.pause_odrive()
+        self.paused = old_val
+        
+        del self.odrv0
+        self.odrv0 = None
+        self.disconnected = True
+
+    def reconnect_odrive(self):
+        self.find_odrive()
+        if not self.paused:
+            self.unpause_odrive()
+        self.disconnected = False
 
     def send_random_events(self):
         '''
@@ -90,6 +125,10 @@ class WheelDriver:
         '''
 
         while self.running:
+            if not self.active:
+                time.sleep(0.1)
+                continue
+
             now = time.perf_counter()
 
             rotations = self.odrv0.axis0.pos_estimate
@@ -100,8 +139,15 @@ class WheelDriver:
             self.steering_info.steering_time = now
             self.steering_info.steering = rotations
 
+
+            latency_adjusted = rotations
+            # apply a feedforward to make it look as if there is less latency so you don't get annoyed
+            if self.steering_info.last_steering_time is not None:
+                vel = (rotations - self.steering_info.last_steering) / (self.steering_info.steering_time - self.steering_info.last_steering_time)
+                latency_adjusted += vel * self.settings_box.value.ffb_profile.latency_compensation
+
             endpoint = self.settings_box.value.ffb_profile.total_rotations / 2
-            steering_value = number_utils.map_value(rotations, -endpoint, endpoint, 0, 0xffff)
+            steering_value = number_utils.map_value(latency_adjusted, -endpoint, endpoint, 0, 0xffff)
             self.device.write(ecodes.EV_ABS, ecodes.ABS_Z, int(steering_value))
             self.device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
             time.sleep(0.01) # todo: should this be smaller or adjustable
@@ -112,6 +158,10 @@ class WheelDriver:
         '''
 
         for event in self.device.read_loop():
+            if not self.active:
+                time.sleep(0.1)
+                continue
+
             if event.type != ecodes.EV_UINPUT:
                 continue
 
@@ -129,9 +179,8 @@ class WheelDriver:
                 if self.odrv0.axis0.current_state != AxisState.CLOSED_LOOP_CONTROL:
                     print(f'Disarm: {self.odrv0.axis0.disarm_reason}')
                     if self.settings_box.value.odrive_settings.ignore_odrive_errors:
-                        time.sleep(1)
-                        self.odrv0.clear_errors()
-                        self.odrv0.axis0.requested_state = AxisState.CLOSED_LOOP_CONTROL
+                        time.sleep(0.3)
+                        self.clear_errors()
                         print("forcing odrive back on")
 
             elif event.code == ecodes.UI_FF_ERASE:

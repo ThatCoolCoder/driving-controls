@@ -39,7 +39,7 @@
                 Sensitivity
             </div>
             <div class="col">
-                <input type="number" bind:value={ profile.sensitivity } step="0.05" />
+                <input type="number" bind:value={ profile.sensitivity } step="0.05" min="0" />
             </div>
         </div>
         <div class="row mb-3">
@@ -47,7 +47,15 @@
                 Damping amount
             </div>
             <div class="col">
-                <input type="number" bind:value={ profile.damping } step="0.05" />
+                <input type="number" bind:value={ profile.damping } step="0.05" min="0" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                Latency compensation time (seconds)
+            </div>
+            <div class="col">
+                <input type="number" bind:value={ profile.latency_compensation } step="0.001" min="0" />
             </div>
         </div>
         <div class="row mb-3">
@@ -55,7 +63,7 @@
                 Total rotations lock to lock
             </div>
             <div class="col">
-                <input type="number" bind:value={ profile.total_rotations } step="0.1" />
+                <input type="number" bind:value={ profile.total_rotations } step="0.1" min="0" />
             </div>
         </div>
     </ApiDependent>
