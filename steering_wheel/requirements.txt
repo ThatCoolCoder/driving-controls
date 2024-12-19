@@ -2,4 +2,5 @@ argparse
 pydantic
 fastapi
 uvicorn
+odrive
 # python-evdev also needed, must be installed through system package manager

@@ -1,8 +1,8 @@
 # Driving Controls
 
-Code for my DIY sim wheel and pedals. It's not the best code but it gets the job done. It's not designed to be very configurable; if you want to use it you'll have to go changing things directly in the code. I've mainly put it on Github for backup purposes.
+Code for my DIY sim wheel and pedals. This project is only made public as a demonstration of how such a wheel could be implemented (as well as a backup), rather than being a ready-to-use solution. Thus the code is not the best and it isn't easy configure.
 
-Only works on Linux.
+It is a linux-only project due to the use of evdev.
 
 ## Architecture
 
@@ -12,16 +12,23 @@ The wheel is built from a hoverboard motor (direct drive) and controlled by an o
 
 The wheel has code for adding a bunch of unused uinput channels as the controller otherwise wouldn't show up in BeamNG running through proton.
 
-#### Installation notes
+#### Installation & usage
 
-In addition to installing from `steering_wheel/requirements.txt`, you will also need to install python-evdev from your system package manager (it is not on pypi).
+Setup motor/odrive/psu to work correctly in torque control mode. Use pip to install dependencies from `steering_wheel/requirements.txt` (it is recommended to use a venv). You will also need to install python-evdev from your system package manager (it is not on pypi).
+
+Then run as a module: `python -m steering_wheel`. By default it will launch a web ui for controlling it, run with the `--help` flag to see all options.
 
 ### Pedals
 
 All three pedals are load-cell, they are connected to the computer through an Arduino Leonardo. As some games do not differentiate between different input devices, the wheel and pedals do not share any axes.
 
+### Usage
+
+Upload code onto arduino and plug in.
+
+There is also some legacy python code that allowed the pedals to work with a regular arduino Uno communicating via serial, in future I may clean this up and add it as an option for those who do not have a leonardo.
+
 ## arduino libraries to install for pedals
 - hx711 (by Rob Tillaart)
 - enableinterrupt (by Mike Schwager)
-- quadratureencoder (by Cheng Saetern)
 - [https://github.com/MHeironimus/ArduinoJoystickLibrary/](https://github.com/MHeironimus/ArduinoJoystickLibrary/) (needs to be manually downloaded and installed - see instructions on that page)
