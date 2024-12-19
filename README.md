@@ -1,6 +1,6 @@
 # Driving Controls
 
-Code for my DIY sim wheel and pedals. This project is only made public as a demonstration of how such a wheel could be implemented (as well as a backup), rather than being a ready-to-use solution. Thus the code is not the best and it isn't easy configure.
+Code for my DIY sim wheel and pedals. This project is only made public as a demonstration of how such a wheel could be implemented (as well as a backup), rather than being a ready-to-use solution. Thus the code is not the best and it isn't easy to configure.
 
 It is a linux-only project due to the use of evdev.
 
