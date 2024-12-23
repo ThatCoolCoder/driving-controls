@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "HX711.h"
-#include <Joystick.h>
 
 #define BUZZER 8
 
@@ -20,8 +19,6 @@ float brake_max;
 float clutch_min;
 float clutch_max;
 
-Joystick_ joystick(JOYSTICK_DEFAULT_REPORT_ID, JOYSTICK_TYPE_MULTI_AXIS, 0, 0,
-	true, true, true, true, true, true, true, true, true, true, true);
 
 void setup()
 {
@@ -36,13 +33,14 @@ void setup()
 
 void calibrate()
 {
+    Serial.begin(2000000);
     beep(300);
 
     accel.tare();
     brake.tare();
     clutch.tare();
 
-    delay(5000);
+    delay(2000);
     brake_max = brake.get_value(10U);
     brake_min = brake_max * start_deadzone;
     brake_max -= brake_max * end_deadzone;
@@ -58,11 +56,6 @@ void calibrate()
     accel_max -= accel_max * end_deadzone;
 
     repeated_beep(3);
-
-	joystick.begin();
-	joystick.setRxAxisRange(0, FULL_PRESS_VALUE);
-	joystick.setRyAxisRange(0, FULL_PRESS_VALUE);
-	joystick.setRzAxisRange(0, FULL_PRESS_VALUE);
 }
 
 void loop()
@@ -71,9 +64,12 @@ void loop()
     float brakeValue = map_value(brake.get_value(), brake_min, brake_max, 0, (float) FULL_PRESS_VALUE);
     float clutchValue = map_value(clutch.get_value(), clutch_min, clutch_max, 0, (float) FULL_PRESS_VALUE);
 
-    joystick.setRxAxis(constrain(accelValue, 0, FULL_PRESS_VALUE ));
-    joystick.setRyAxis(constrain(brakeValue, 0, FULL_PRESS_VALUE ));
-    joystick.setRzAxis(constrain(clutchValue, 0, FULL_PRESS_VALUE ));
+    Serial.print("data:");
+    Serial.print(accelValue);
+    Serial.print(",");
+    Serial.print(brakeValue);
+    Serial.print(",");
+    Serial.println(clutchValue);
 }
 
 void beep(int duration)

@@ -7,12 +7,12 @@ import uinput
 debug = False
 
 # There are uinput events called gas + brake but steam isn't recognising them, so we use regular axes
-GAS_EVENT = uinput.ABS_THROTTLE
-BRAKE_EVENT = uinput.ABS_X
-CLUTCH_EVENT = uinput.ABS_Y
+GAS_EVENT = uinput.ABS_RX
+BRAKE_EVENT = uinput.ABS_RY
+CLUTCH_EVENT = uinput.ABS_RZ
 
 events = (
-    GAS_EVENT + (0, 0xFFFF, 0, 0), BRAKE_EVENT + (0, 0xFFFF, 0, 0), CLUTCH_EVENT + (0, 0xFFFF, 0, 0),
+    GAS_EVENT + (0, 0x7FFF, 0, 0), BRAKE_EVENT + (0, 0x7FFF, 0, 0), CLUTCH_EVENT + (0, 0x7FFF, 0, 0),
 
     # random stuff to make sure steam recognises it as a controller
     uinput.BTN_JOYSTICK,
@@ -34,6 +34,8 @@ def main(serial_path='/dev/ttyACM0'):
     device.emit(uinput.ABS_Y, 128, syn=False)
     device.emit(uinput.ABS_Z, 128, syn=False)
     device.emit(uinput.ABS_RX, 0, syn=False)
+    device.emit(uinput.ABS_RY, 0, syn=False)
+    device.emit(uinput.ABS_RZ, 0, syn=False)
     device.emit(uinput.ABS_HAT0X, 0, True)
     device.emit(uinput.ABS_HAT0Y, 0, True)
     device.emit(uinput.BTN_JOYSTICK, 0, True)
@@ -86,7 +88,7 @@ def handle_data(data, device):
     device.emit(CLUTCH_EVENT, map_to_output(clutch_value))
 
 def map_to_output(value):
-    return int(min(max(value, 0), 0xFFFF))
+    return int(min(max(value, 0), 0x7FFF))
 
 def find_port_path():
     # Determine which port is the correct one, so that we don't have to plug in devices in a certain order to match hardcoded path
