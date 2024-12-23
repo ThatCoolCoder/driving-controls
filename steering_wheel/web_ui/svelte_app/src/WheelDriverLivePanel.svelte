@@ -27,7 +27,6 @@
 
 	onMount(async () => {
 		wheelDriverActive = (await api.get(`wheeldriver/status`, "Failed getting wheel driver status")).active;
-        console.log(wheelDriverActive);
 	});
 </script>
 
