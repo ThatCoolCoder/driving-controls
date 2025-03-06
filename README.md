@@ -14,15 +14,15 @@ The wheel has code for adding a bunch of unused uinput channels as the controlle
 
 #### Installation & usage
 
-Setup motor/odrive/psu to work correctly in torque control mode. Use pip to install dependencies from `steering_wheel/requirements.txt` (it is recommended to use a venv). You will also need to install python-evdev from your system package manager (it is not on pypi).
+Setup motor/odrive/psu to work correctly in torque control mode. Use pip to install dependencies from `steering_wheel/requirements.txt` (it is recommended to use a venv).
 
-Then run as a module: `python -m steering_wheel`. By default it will launch a web ui for controlling it, run with the `--help` flag to see all options.
+Then run as a module: `python -m steering_wheel`. By default it will launch a web ui for configuring it, run with the `--help` flag to see all options.
 
 ### Pedals
 
 All three pedals are load-cell, they are connected to the computer through an Arduino Leonardo. As some games do not differentiate between different input devices, the wheel and pedals do not share any axes.
 
-### Usage
+#### Usage
 
 Upload code onto arduino and plug in.
 

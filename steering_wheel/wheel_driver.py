@@ -150,7 +150,7 @@ class WheelDriver:
             steering_value = number_utils.map_value(latency_adjusted, -endpoint, endpoint, 0, 0xffff)
             self.device.write(ecodes.EV_ABS, ecodes.ABS_Z, int(steering_value))
             self.device.write(ecodes.EV_SYN, ecodes.SYN_REPORT, 0)
-            time.sleep(0.01) # todo: should this be smaller or adjustable
+            time.sleep(0.005)
 
     def receive_ffb_loop(self):
         '''
